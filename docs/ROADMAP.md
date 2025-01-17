@@ -24,12 +24,12 @@
 
 ### Phase 1: Foundation (Sprint 1 - 4 days)
 Target: Week 1
-- [ ] Project Setup
-  - [ ] Initialize Next.js with TypeScript
-  - [ ] Set up Supabase project
-  - [ ] Configure ESLint and Prettier
-  - [ ] Set up testing frameworks (Vitest, Jest, Cypress)
-  - [ ] Configure development environment
+- [-] Project Setup
+  - [-] Initialize Next.js with TypeScript
+  - [-] Set up Supabase project
+  - [-] Configure ESLint and Prettier
+  - [-] Set up testing frameworks (Vitest, Jest, Cypress)
+  - [-] Configure development environment
 - [ ] Authentication System
   - [ ] Create login page with email/password
   - [ ] Implement registration form

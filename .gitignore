@@ -44,6 +44,3 @@ next-env.d.ts
 /docs/sessions/*
 !/docs/sessions/session.template.md
 /docs/CODEBASE.md
-
-# Ignore session files
-docs/sessions/
