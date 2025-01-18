@@ -1,6 +1,6 @@
 /** Form input component with validation */
 
-import type { InputHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, ReactElement } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Label text for the input */
@@ -10,7 +10,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 /** Input with consistent styling and error handling */
-export default function Input({ label, error, id, className = '', ...props }: InputProps) {
+export default function Input({
+  label,
+  error,
+  id,
+  className = '',
+  ...props
+}: InputProps): ReactElement {
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium mb-1 text-foreground">

@@ -1,4 +1,4 @@
-import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export const AUTH_CONFIG = {
   // Auth endpoints

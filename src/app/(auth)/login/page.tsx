@@ -1,6 +1,7 @@
 /** Log in page with login form */
 
 import type { ReactElement } from 'react';
+
 import AuthForm from '@/components/auth/AuthForm';
 
 /** Renders the log in page */

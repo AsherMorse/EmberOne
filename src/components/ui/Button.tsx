@@ -1,6 +1,6 @@
 /** Primary button component with loading state */
 
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Content to display inside the button */
@@ -19,7 +19,7 @@ export default function Button({
   className = '',
   disabled,
   ...props
-}: ButtonProps) {
+}: ButtonProps): ReactElement {
   return (
     <button
       className={`w-full bg-accent text-background py-2 px-4 rounded-md hover:bg-accent/90 disabled:opacity-50 ${className}`}
