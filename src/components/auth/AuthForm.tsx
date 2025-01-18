@@ -1,6 +1,6 @@
 'use client';
 
-/** Authentication form with email/password fields and validation */
+/** Authentication form for login and signup flows */
 
 import { useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
@@ -9,17 +9,20 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useAuth } from '@/lib/auth/context';
 
+/** Form data for auth inputs */
 interface FormData {
+  /** Email address */
   email: string;
+  /** Password */
   password: string;
 }
 
 interface AuthFormProps {
-  /** Type of auth form - either 'login' or 'signup' */
+  /** Form type - login or signup */
   type: 'login' | 'signup';
 }
 
-/** Handles user authentication with email and password */
+/** Form component for user authentication */
 export default function AuthForm({ type }: AuthFormProps): ReactElement {
   const { logIn, signUp } = useAuth();
   const [formData, setFormData] = useState<FormData>({
@@ -29,6 +32,7 @@ export default function AuthForm({ type }: AuthFormProps): ReactElement {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  /** Handle form submission */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
@@ -49,6 +53,7 @@ export default function AuthForm({ type }: AuthFormProps): ReactElement {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Email field */}
       <Input
         type="email"
         label="Email"
@@ -59,6 +64,7 @@ export default function AuthForm({ type }: AuthFormProps): ReactElement {
         error={error}
       />
 
+      {/* Password field */}
       <Input
         type="password"
         label="Password"
@@ -69,6 +75,7 @@ export default function AuthForm({ type }: AuthFormProps): ReactElement {
         error={error}
       />
 
+      {/* Submit button */}
       <Button type="submit" loading={loading}>
         {type === 'login' ? 'Log In' : 'Sign Up'}
       </Button>
