@@ -3,11 +3,11 @@
 /** Auth context provider and hooks */
 
 import type { Session, User } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode, ReactElement } from 'react';
 
-import { supabase } from '../supabase';
+import { supabase } from '../supabase/client';
 
 import { AUTH_CONFIG } from './config';
 
@@ -26,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       AUTH_CONFIG.handleAuthChange(event, session);
       setSession(session);
       setUser(session?.user ?? null);
@@ -50,16 +51,20 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
       // Handle redirects based on auth state
       switch (event) {
         case 'SIGNED_IN':
-          router.push(AUTH_CONFIG.AFTER_LOGIN_URL);
+          if (pathname === '/login' || pathname === '/signup') {
+            router.push(AUTH_CONFIG.AFTER_LOGIN_URL);
+            router.refresh();
+          }
           break;
         case 'SIGNED_OUT':
           router.push(AUTH_CONFIG.AFTER_LOGOUT_URL);
+          router.refresh();
           break;
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, pathname]);
 
   const logIn = async (email: string, password: string): Promise<void> => {
     try {

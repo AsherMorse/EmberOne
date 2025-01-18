@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 /** Middleware to handle protected routes */
 export async function middleware(req: NextRequest): Promise<NextResponse> {
+  const res = NextResponse.next();
+  const supabase = createClient(req, res);
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -20,7 +22,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  return NextResponse.next();
+  return res;
 }
 
 /** Paths that trigger the middleware */
