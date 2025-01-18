@@ -12,10 +12,19 @@
 
 # testing
 /coverage
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+.vitest/
+test-results/
+playwright-report/
 
 # next.js
 /.next/
 /out/
+/build
+/dist
 
 # production
 /build
@@ -30,8 +39,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env.*
+!.env.example
+!.env.test.example
 
 # vercel
 .vercel
@@ -44,3 +56,9 @@ next-env.d.ts
 /docs/sessions/*
 !/docs/sessions/session.template.md
 /docs/CODEBASE.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,35 +1,53 @@
 {
-  "name": "w3",
+  "name": "emberone",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "clean": "rm -rf .next out coverage",
+    "type-check": "tsc --noEmit",
+    "validate": "npm run lint && npm run type-check && npm run format:check",
+    "prebuild": "npm run validate"
   },
   "dependencies": {
     "next": "15.1.5",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.39.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "@typescript-eslint/eslint-plugin": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.3.1",
     "eslint": "^9",
     "eslint-config-next": "15.1.5",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "glob": "^10.3.10",
+    "jsdom": "^24.0.0",
     "postcss": "^8",
     "prettier": "^3.4.2",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^1.3.1",
+    "cypress": "^13.6.3",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@testing-library/jest-dom": "^6.4.2"
+  },
+  "overrides": {
+    "glob": "^10.3.10"
   }
 }
