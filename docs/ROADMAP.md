@@ -1,6 +1,7 @@
 # Project Roadmap
 
 ## Current Status
+
 - Phase: Planning
 - Version: 0.1.0
 - Updated: 2024-03-21
@@ -8,6 +9,7 @@
 ---
 
 ## Core Objectives
+
 1. [ ] Build authentication system with Supabase
    - Email/password authentication
    - User registration
@@ -23,7 +25,9 @@
 ## Development Phases
 
 ### Phase 1: Foundation (Sprint 1 - 4 days)
+
 Target: Week 1
+
 - [x] Project Setup
   - [x] Initialize Next.js with TypeScript
   - [x] Set up Supabase project
@@ -51,7 +55,9 @@ Target: Week 1
   - [ ] Set up real-time subscriptions
 
 ### Phase 2: Features & Polish (Sprint 2 - 4 days)
+
 Target: Week 2
+
 - [ ] Entry Management
   - [ ] Create entry input component
   - [ ] Implement entry submission
@@ -78,7 +84,9 @@ Target: Week 2
   - [ ] Cross-browser testing
 
 ### Phase 3: Deployment
+
 Target: End of Week 2
+
 - [ ] AWS Amplify Setup
   - [ ] Connect GitHub repository
   - [ ] Configure build settings
@@ -98,6 +106,7 @@ Target: End of Week 2
 ---
 
 ## Technical Debt
+
 - [ ] Add comprehensive error handling
 - [ ] Improve test coverage beyond critical paths
 - [ ] Add logging and monitoring
@@ -108,6 +117,7 @@ Target: End of Week 2
 ---
 
 ## Future Ideas (Post-MVP)
+
 - [ ] Add tRPC for complex API operations
 - [ ] Implement "Remember me" functionality
 - [ ] Add password reset capability
@@ -124,6 +134,7 @@ Target: End of Week 2
 ---
 
 ## Notes
+
 - Using Next.js with TypeScript for frontend
 - Supabase for authentication and database
   - Default security settings
