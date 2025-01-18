@@ -15,6 +15,34 @@
 > 4. Categorize all changes under appropriate sections
 > 5. Most recent version should appear first
 
+## [0.0.2] - 2024-03-21
+
+### Added
+
+- Next.js project initialization with TypeScript
+- Development environment configuration:
+  - ESLint with TypeScript-specific rules
+  - Prettier with consistent code style
+  - Git pre-commit hooks for validation
+- Supabase integration:
+  - Project creation and configuration
+  - Client initialization with environment validation
+  - Base authentication setup
+- Environment configuration:
+  - Type-safe environment validation
+
+### Changed
+
+- Enhanced TypeScript configuration with strict type checking
+- Updated project structure following CODEBASE.md guidelines
+- Improved development workflow with comprehensive scripts
+- Modified Git configuration for better artifact handling
+
+### Fixed
+
+- Resolved dependency conflicts with React 18.2.0
+- Addressed glob override deprecation warnings
+
 ## [0.0.1] - 2024-03-21
 
 ### Added

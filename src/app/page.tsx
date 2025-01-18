@@ -1,5 +1,8 @@
+/** Landing page with centered welcome message */
+
 import type { ReactElement } from 'react';
 
+/** Renders the home page */
 export default function Home(): ReactElement {
   const message = 'Hello World';
 
