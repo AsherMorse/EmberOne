@@ -49,7 +49,7 @@ Target: Week 1
   - [ ] Set up indexes (created_at DESC)
   - [ ] Configure RLS policies
     - Read: all authenticated users
-    - Write: own entries only
+    - Write: only new entries
   - [ ] Create API contracts
   - [ ] Set up real-time subscriptions
 

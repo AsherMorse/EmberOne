@@ -52,6 +52,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# drizzle
+/drizzle
+.drizzle/
+migrations/
+
 # docs sessions (exclude all except template)
 /docs/sessions/*
 !/docs/sessions/session.template.md
