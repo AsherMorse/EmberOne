@@ -2,8 +2,10 @@
 
 /** List of recent entries with real-time updates */
 
+import { useEffect, useState } from 'react';
 import type { ReactElement } from 'react';
 
+import { useEntryStream } from '@/hooks/useEntryStream';
 import type { Entry } from '@/types/database';
 
 interface EntriesListProps {
@@ -17,10 +19,27 @@ interface EntriesListProps {
 
 /** Component to display a list of entries */
 export default function EntriesList({
-  entries,
+  entries: initialEntries,
   isLoading = false,
   error,
 }: EntriesListProps): ReactElement {
+  // Track entries locally to merge real-time updates
+  const [entries, setEntries] = useState(initialEntries);
+
+  // Update local entries when prop changes
+  useEffect(() => {
+    setEntries(initialEntries);
+  }, [initialEntries]);
+
+  // Subscribe to new entries via SSE
+  useEntryStream((newEntry) => {
+    setEntries((current) => {
+      // Add new entry at the start and keep only the latest 5
+      const updated = [{ ...newEntry, user_id: 'system' }, ...current];
+      return updated.slice(0, 5);
+    });
+  });
+
   if (isLoading) {
     return (
       /* Loading skeleton animation */

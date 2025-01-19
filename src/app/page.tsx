@@ -31,12 +31,7 @@ export default function Home(): ReactElement {
     data: entriesData,
     isLoading: isLoadingEntries,
     error: entriesError,
-  } = trpc.entries.getRecent.useQuery(
-    { limit: 5, offset: 0 },
-    {
-      refetchInterval: 5000, // Refetch every 5 seconds
-    }
-  );
+  } = trpc.entries.getRecent.useQuery({ limit: 5, offset: 0 });
 
   /** Handle entry submission */
   const handleSubmit = async (content: string): Promise<void> => {
