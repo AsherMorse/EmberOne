@@ -1,8 +1,10 @@
 import { router } from '../trpc';
 
+import { entriesRouter } from './entries';
+
 /** Root router for the application */
 export const appRouter = router({
-  // Routes will be added here
+  entries: entriesRouter,
 });
 
 /** Type-only export of the router type */
