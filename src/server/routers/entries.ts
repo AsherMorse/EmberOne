@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import { observable } from '@trpc/server/observable';
 
 import { createEntry, getRecentEntries, getUserEntries } from '@/db/operations';
@@ -8,14 +10,21 @@ import {
 } from '@/server/schemas/entry';
 import { protectedProcedure, router } from '@/server/trpc';
 
+/** Event emitter for entry updates */
+const ee = new EventEmitter();
+
 /** Entry router with CRUD operations and real-time updates */
 export const entriesRouter = router({
   /** Create a new entry */
   create: protectedProcedure.input(createEntrySchema).mutation(async ({ ctx, input }) => {
-    return createEntry({
+    const result = await createEntry({
       content: input.content,
       user_id: ctx.user.id,
     });
+    if (result.data) {
+      ee.emit('entry.created', result.data);
+    }
+    return result;
   }),
 
   /** Get recent entries with pagination */
@@ -30,9 +39,18 @@ export const entriesRouter = router({
 
   /** Subscribe to entry updates */
   onEntryUpdate: protectedProcedure.subscription(() => {
-    return observable<{ type: 'created'; data: { id: string } }>(() => (): (() => void) => {
-      return () => {
-        // Cleanup will be implemented when we add event handling
+    return observable<{
+      type: 'created';
+      data: { id: string; content: string; created_at: string };
+    }>((emit) => {
+      const onEntryCreated = (entry: { id: string; content: string; created_at: string }): void => {
+        emit.next({ type: 'created', data: entry });
+      };
+
+      ee.on('entry.created', onEntryCreated);
+
+      return (): void => {
+        ee.off('entry.created', onEntryCreated);
       };
     });
   }),
