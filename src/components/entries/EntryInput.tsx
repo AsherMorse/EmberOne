@@ -12,12 +12,13 @@ import { createEntrySchema } from '@/server/schemas/entry';
 interface EntryInputProps {
   /** Called when a new entry is submitted */
   onSubmit?: (content: string) => Promise<void>;
+  /** Whether the form is currently submitting */
+  isLoading?: boolean;
 }
 
 /** Form component for submitting new text entries */
-export default function EntryInput({ onSubmit }: EntryInputProps): ReactElement {
+export default function EntryInput({ onSubmit, isLoading = false }: EntryInputProps): ReactElement {
   const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   /** Validate entry content */
@@ -45,15 +46,12 @@ export default function EntryInput({ onSubmit }: EntryInputProps): ReactElement 
     }
 
     setError('');
-    setLoading(true);
 
     try {
       await onSubmit?.(content);
       setContent(''); // Clear input on success
     } catch (err) {
       setError((err as Error).message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,7 +69,7 @@ export default function EntryInput({ onSubmit }: EntryInputProps): ReactElement 
         error={error}
       />
       {/* Submit button with loading state */}
-      <Button type="submit" loading={loading} disabled={!!error}>
+      <Button type="submit" loading={isLoading} disabled={!!error || isLoading}>
         Submit Entry
       </Button>
     </form>

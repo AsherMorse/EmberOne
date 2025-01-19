@@ -5,13 +5,26 @@
 import type { ReactElement } from 'react';
 
 import EntryInput from '@/components/entries/EntryInput';
+import { trpc } from '@/lib/trpc';
 
 /** Renders the home page */
 export default function Home(): ReactElement {
+  const utils = trpc.useUtils();
+
+  /** Handle entry submission */
+  const { mutate: createEntry, isLoading } = trpc.entries.create.useMutation({
+    onSuccess: () => {
+      // Invalidate recent entries query to trigger refresh
+      utils.entries.getRecent.invalidate();
+    },
+    onError: (error) => {
+      console.error('Failed to create entry:', error);
+    },
+  });
+
   /** Handle entry submission */
   const handleSubmit = async (content: string): Promise<void> => {
-    // TODO: Implement entry submission with tRPC
-    console.log('Submitting entry:', content);
+    createEntry({ content });
   };
 
   return (
@@ -24,7 +37,7 @@ export default function Home(): ReactElement {
 
       {/* Entry input section */}
       <section className="max-w-2xl mx-auto">
-        <EntryInput onSubmit={handleSubmit} />
+        <EntryInput onSubmit={handleSubmit} isLoading={isLoading} />
       </section>
     </main>
   );
