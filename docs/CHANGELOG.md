@@ -15,6 +15,34 @@
 > 4. Categorize all changes under appropriate sections
 > 5. Most recent version should appear first
 
+## [0.0.4]
+
+### Added
+- Real-time entry updates using tRPC subscriptions
+- Client-side subscription hook for handling new entries
+- tRPC provider and client configuration
+- Database session pooler connection for IPv4 compatibility
+- Reusable pagination schema with default values
+- Content length validation at schema level
+- Comprehensive error handling in database operations
+
+### Changed
+- Switched from SSE to tRPC subscriptions for real-time updates
+- Simplified database credentials using connection string
+- Improved TypeScript type safety across database operations
+- Enhanced pre-commit hooks with auto-fixing capabilities
+
+### Fixed
+- Database connection issues by using session pooler
+- Module resolution in tRPC client imports
+- TypeScript errors in subscription hook implementation
+- Linting issues in database configuration
+
+### Security
+- Implemented Row Level Security (RLS) policies
+- Added authentication checks for subscriptions
+- Secured database access patterns
+
 ## [0.0.3]
 
 ### Added
