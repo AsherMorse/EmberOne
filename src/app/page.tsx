@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 
 import EntriesList from '@/components/entries/EntriesList';
 import EntryInput from '@/components/entries/EntryInput';
+import Logo from '@/components/ui/Logo';
 import { trpc } from '@/lib/trpc';
 
 /** Rate limit for entry submissions in milliseconds */
@@ -42,7 +43,7 @@ export default function Home(): ReactElement {
     <main className="min-h-screen p-8">
       {/* Page header */}
       <header className="max-w-2xl mx-auto mb-8">
-        <h1 className="text-3xl font-bold mb-2">EmberOne</h1>
+        <Logo size={48} className="mb-2" />
         <p className="text-muted-foreground">Share your thoughts with the world.</p>
       </header>
 

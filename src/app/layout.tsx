@@ -25,6 +25,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'EmberOne',
   description: 'Kindling Connections, One Ticket at a Time',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 /** Root layout with HTML structure and providers */

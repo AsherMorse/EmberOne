@@ -57,14 +57,14 @@ Target: Week 1
 
 Target: Week 2
 
-- [-] Entry Management
-  - [-] Create entry input component
-  - [-] Implement entry submission
-  - [-] Add loading states
-  - [-] Set up real-time updates
-  - [-] Create recent entries display
-  - [-] Implement auto-refresh
-  - [-] Style components
+- [x] Entry Management
+  - [x] Create entry input component
+  - [x] Implement entry submission
+  - [x] Add loading states
+  - [x] Set up real-time updates
+  - [x] Create recent entries display
+  - [x] Implement auto-refresh
+  - [x] Style components
 - [ ] Testing & Polish
   - [ ] Unit tests with Vitest (80% coverage)
     - [ ] Form validation
@@ -86,7 +86,7 @@ Target: Week 2
     - [ ] Login/logout flow
     - [ ] Entry submission flow
     - [ ] Real-time update flow
-  - [ ] UI refinements
+  - [x] UI refinements
 
 ### Phase 3: Deployment
 
