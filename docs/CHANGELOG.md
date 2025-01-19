@@ -15,7 +15,41 @@
 > 4. Categorize all changes under appropriate sections
 > 5. Most recent version should appear first
 
-## [0.0.2] - 2024-03-21
+## [0.0.3]
+
+### Added
+
+- Authentication system with Supabase:
+  - Login and signup pages with email/password
+  - Protected routes with middleware
+  - Session persistence with cookies
+  - Form validation and error handling
+- Reusable UI components:
+  - Button with loading state
+  - Input with validation
+  - AuthForm for authentication flows
+  - AuthPage layout with navigation
+- Dark mode support with CSS variables
+- Client and server Supabase utilities
+
+### Changed
+
+- Improved code organization:
+  - Extracted shared auth components
+  - Split Supabase client and server code
+  - Enhanced TypeScript types and interfaces
+- Updated to modern cookie handling methods
+- Refactored auth pages for better UX
+
+### Fixed
+
+- Session persistence with proper cookie handling
+- TypeScript and linting issues
+- Import ordering and unused code
+- Dark mode text visibility
+- Form styling and validation
+
+## [0.0.2]
 
 ### Added
 
@@ -43,7 +77,7 @@
 - Resolved dependency conflicts with React 18.2.0
 - Addressed glob override deprecation warnings
 
-## [0.0.1] - 2024-03-21
+## [0.0.1]
 
 ### Added
 
