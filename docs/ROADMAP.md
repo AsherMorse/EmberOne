@@ -40,47 +40,53 @@ Target: Week 1
   - [x] Implement session persistence
   - [x] Add form validation
   - [x] Add error messages
-- [ ] Database Layer
-  - [ ] Create entries table with schema
+- [x] Database Layer
+  - [x] Create entries table with schema
     - id (uuid)
     - content (text)
     - created_at (timestamp)
     - user_id (uuid)
-  - [ ] Set up indexes (created_at DESC)
-  - [ ] Configure RLS policies
+  - [x] Set up indexes (created_at DESC)
+  - [x] Configure RLS policies
     - Read: all authenticated users
     - Write: only new entries
-  - [ ] Create API contracts
-  - [ ] Set up real-time subscriptions
+  - [x] Create API contracts
+  - [x] Set up real-time subscriptions
 
 ### Phase 2: Features & Polish (Sprint 2 - 4 days)
 
 Target: Week 2
 
-- [ ] Entry Management
-  - [ ] Create entry input component
-  - [ ] Implement entry submission
-  - [ ] Add loading states
-  - [ ] Set up real-time updates
-  - [ ] Create recent entries display
-  - [ ] Implement auto-refresh
-  - [ ] Style components
+- [-] Entry Management
+  - [-] Create entry input component
+  - [-] Implement entry submission
+  - [-] Add loading states
+  - [-] Set up real-time updates
+  - [-] Create recent entries display
+  - [-] Implement auto-refresh
+  - [-] Style components
 - [ ] Testing & Polish
-  - [ ] Unit tests (80% coverage)
+  - [ ] Unit tests with Vitest (80% coverage)
     - [ ] Form validation
     - [ ] State management
     - [ ] Utility functions
-  - [ ] Integration tests
+    - [ ] Hooks and custom logic
+  - [ ] Integration tests with Vitest
     - [ ] Auth endpoints
     - [ ] Entry operations
     - [ ] RLS policies
-  - [ ] E2E tests
-    - [ ] User registration
-    - [ ] Login/logout
-    - [ ] Entry submission
-    - [ ] Real-time updates
+    - [ ] API contracts
+  - [ ] Component tests with Cypress
+    - [ ] Auth forms
+    - [ ] Entry input
+    - [ ] Entry list
+    - [ ] Loading states
+  - [ ] E2E tests with Cypress
+    - [ ] User registration flow
+    - [ ] Login/logout flow
+    - [ ] Entry submission flow
+    - [ ] Real-time update flow
   - [ ] UI refinements
-  - [ ] Cross-browser testing
 
 ### Phase 3: Deployment
 
