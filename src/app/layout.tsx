@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 
 import { AuthProvider } from '@/lib/auth/context';
 import './globals.css';
+import { TRPCProvider } from '@/lib/trpc/Provider';
 
 // Geist Sans font config
 const geistSans = Geist({
@@ -35,7 +36,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <TRPCProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </TRPCProvider>
       </body>
     </html>
   );
