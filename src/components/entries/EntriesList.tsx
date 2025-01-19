@@ -23,11 +23,13 @@ export default function EntriesList({
 }: EntriesListProps): ReactElement {
   if (isLoading) {
     return (
+      /* Loading skeleton animation */
       <div className="space-y-4 animate-pulse">
         {[...Array(5)].map((_, i) => (
+          /* Skeleton entry card */
           <div key={i} className="bg-muted rounded-md p-4">
-            <div className="h-4 bg-background/50 rounded w-1/4 mb-2" />
-            <div className="h-4 bg-background/50 rounded w-3/4" />
+            {/* Skeleton content */}
+            <div className="h-14 bg-background/50 rounded w-3/4" />
           </div>
         ))}
       </div>
@@ -36,12 +38,14 @@ export default function EntriesList({
 
   if (error) {
     return (
+      /* Error message display */
       <div className="text-red-500 p-4 rounded-md border border-red-500 bg-red-500/10">{error}</div>
     );
   }
 
   if (entries.length === 0) {
     return (
+      /* Empty state message */
       <div className="text-muted-foreground text-center p-8">
         No entries yet. Be the first to share your thoughts!
       </div>
@@ -49,10 +53,14 @@ export default function EntriesList({
   }
 
   return (
+    /* Entries list container */
     <div className="space-y-4">
       {entries.map((entry) => (
+        /* Entry card */
         <article key={entry.id} className="bg-background border border-muted rounded-md p-4">
+          {/* Entry content */}
           <p className="text-foreground mb-2">{entry.content}</p>
+          {/* Entry timestamp */}
           <time className="text-sm text-muted-foreground">
             {new Date(entry.created_at).toLocaleString()}
           </time>
