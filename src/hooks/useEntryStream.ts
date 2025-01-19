@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import type { EntryMessage, SSEMessage } from '@/types/sse';
+import type { EntryMessage } from '@/types/sse';
 import { SSE_EVENTS } from '@/types/sse';
 
 /** Hook for subscribing to entry updates via SSE */
@@ -18,14 +18,16 @@ export function useEntryStream(onNewEntry: (entry: EntryMessage['data']) => void
       console.log('SSE connection established');
     };
 
-    // Handle incoming messages
-    eventSource.onmessage = (event: MessageEvent): void => {
-      const message = JSON.parse(event.data) as SSEMessage;
+    // Handle connected event
+    eventSource.addEventListener(SSE_EVENTS.CONNECTED, () => {
+      console.log('SSE ready to receive entries');
+    });
 
-      if (message.type === SSE_EVENTS.ENTRY) {
-        onNewEntry(message.data);
-      }
-    };
+    // Handle entry events
+    eventSource.addEventListener(SSE_EVENTS.ENTRY, (event: MessageEvent) => {
+      const message = JSON.parse(event.data) as EntryMessage;
+      onNewEntry(message.data);
+    });
 
     // Handle errors
     eventSource.onerror = (error: Event): void => {

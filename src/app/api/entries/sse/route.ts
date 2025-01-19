@@ -16,7 +16,9 @@ export async function GET(req: NextRequest): Promise<Response> {
           type: SSE_EVENTS.CONNECTED,
           data: undefined,
         };
-        controller.enqueue(`data: ${JSON.stringify(connectedMessage)}\n\n`);
+        controller.enqueue(
+          `event: ${SSE_EVENTS.CONNECTED}\ndata: ${JSON.stringify(connectedMessage)}\n\n`
+        );
 
         // Handle new entries
         const onNewEntry = (entry: EntryMessage['data']): void => {
@@ -24,7 +26,9 @@ export async function GET(req: NextRequest): Promise<Response> {
             type: SSE_EVENTS.ENTRY,
             data: entry,
           };
-          controller.enqueue(`data: ${JSON.stringify(entryMessage)}\n\n`);
+          controller.enqueue(
+            `event: ${SSE_EVENTS.ENTRY}\ndata: ${JSON.stringify(entryMessage)}\n\n`
+          );
         };
 
         // Subscribe to new entry events
