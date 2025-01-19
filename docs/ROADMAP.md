@@ -143,7 +143,7 @@ Target: End of Week 2
 - Using Next.js with TypeScript for frontend
 - Supabase for authentication and database
   - Default security settings
-  - Real-time subscriptions
+  - Server-Sent Events (SSE) for real-time updates
   - Row Level Security (RLS)
 - AWS Amplify for deployment
   - Automated CI/CD

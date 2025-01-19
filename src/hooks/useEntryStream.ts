@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-import type { Entry } from '@/types/database';
+import type { EntryMessage, SSEMessage } from '@/types/sse';
+import { SSE_EVENTS } from '@/types/sse';
 
 /** Hook for subscribing to entry updates via SSE */
-export function useEntryStream(
-  onNewEntry: (entry: Pick<Entry, 'id' | 'content' | 'created_at'>) => void
-): void {
+export function useEntryStream(onNewEntry: (entry: EntryMessage['data']) => void): void {
   // Keep track of the EventSource instance
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -21,10 +20,10 @@ export function useEntryStream(
 
     // Handle incoming messages
     eventSource.onmessage = (event: MessageEvent): void => {
-      const data = JSON.parse(event.data);
+      const message = JSON.parse(event.data) as SSEMessage;
 
-      if (data.type === 'entry') {
-        onNewEntry(data.data);
+      if (message.type === SSE_EVENTS.ENTRY) {
+        onNewEntry(message.data);
       }
     };
 

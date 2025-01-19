@@ -7,6 +7,7 @@ import type { ReactElement } from 'react';
 
 import { useEntryStream } from '@/hooks/useEntryStream';
 import type { Entry } from '@/types/database';
+import type { EntryMessage } from '@/types/sse';
 
 interface EntriesListProps {
   /** List of entries to display */
@@ -32,7 +33,7 @@ export default function EntriesList({
   }, [initialEntries]);
 
   // Subscribe to new entries via SSE
-  useEntryStream((newEntry) => {
+  useEntryStream((newEntry: EntryMessage['data']) => {
     setEntries((current) => {
       // Add new entry at the start and keep only the latest 5
       const updated = [{ ...newEntry, user_id: 'system' }, ...current];

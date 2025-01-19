@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 
 import { emitter, NEW_ENTRY_EVENT } from '@/lib/events/entries';
 import { createClient } from '@/lib/supabase/server';
-import type { Entry } from '@/types/database';
+import type { ConnectedMessage, EntryMessage } from '@/types/sse';
+import { SSE_EVENTS } from '@/types/sse';
 
 /** Handler for SSE requests */
 export async function GET(req: NextRequest): Promise<Response> {
@@ -11,11 +12,19 @@ export async function GET(req: NextRequest): Promise<Response> {
     new ReadableStream({
       start(controller): void {
         // Send initial connection message
-        controller.enqueue('data: {"type":"connected"}\n\n');
+        const connectedMessage: ConnectedMessage = {
+          type: SSE_EVENTS.CONNECTED,
+          data: undefined,
+        };
+        controller.enqueue(`data: ${JSON.stringify(connectedMessage)}\n\n`);
 
         // Handle new entries
-        const onNewEntry = (entry: Pick<Entry, 'id' | 'content' | 'created_at'>): void => {
-          controller.enqueue(`data: ${JSON.stringify({ type: 'entry', data: entry })}\n\n`);
+        const onNewEntry = (entry: EntryMessage['data']): void => {
+          const entryMessage: EntryMessage = {
+            type: SSE_EVENTS.ENTRY,
+            data: entry,
+          };
+          controller.enqueue(`data: ${JSON.stringify(entryMessage)}\n\n`);
         };
 
         // Subscribe to new entry events
