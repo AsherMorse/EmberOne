@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type NextRequest, type NextResponse } from 'next/server';
 
@@ -16,15 +16,8 @@ export function createClient(req: NextRequest, res: NextResponse): SupabaseClien
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          res.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          res.cookies.set({ name, value: '', ...options });
-        },
+        getAll: () => Array.from(req.cookies.getAll()).map(({ name, value }) => ({ name, value })),
+        setAll: (cookies) => cookies.forEach((cookie) => res.cookies.set(cookie)),
       },
     }
   );
