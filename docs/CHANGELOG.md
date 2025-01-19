@@ -15,6 +15,28 @@
 > 4. Categorize all changes under appropriate sections
 > 5. Most recent version should appear first
 
+## [0.0.5]
+
+### Added
+- Entry management system with real-time updates:
+  - EntryInput component with form validation
+  - EntriesList component with skeleton loading
+  - Server-Sent Events (SSE) endpoint for real-time updates
+  - useEntryStream hook for SSE handling
+  - Rate limiting with countdown timer
+- Comprehensive error handling and loading states
+- Type-safe SSE message system
+- Event emitter system for broadcasting updates
+
+### Changed
+- Improved TypeScript type safety across SSE implementation
+- Updated development workflow with proper branching strategy
+
+### Fixed
+- Memory management for long-lived connections
+- Connection cleanup and resource handling
+- Type safety in SSE endpoint and hooks
+
 ## [0.0.4]
 
 ### Added
