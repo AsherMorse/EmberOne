@@ -2,7 +2,7 @@
 
 /** Text input component for creating new entries */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 
 import Button from '@/components/ui/Button';
@@ -16,6 +16,8 @@ interface EntryInputProps {
   isLoading?: boolean;
   /** Success message to display */
   successMessage?: string;
+  /** Rate limit in milliseconds */
+  rateLimit?: number;
 }
 
 /** Form component for submitting new text entries */
@@ -23,10 +25,27 @@ export default function EntryInput({
   onSubmit,
   isLoading = false,
   successMessage,
+  rateLimit = 5000, // 5 seconds default rate limit
 }: EntryInputProps): ReactElement {
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [lastSubmitTime, setLastSubmitTime] = useState(0);
+  const [timeUntilNextSubmit, setTimeUntilNextSubmit] = useState(0);
+
+  /** Update time until next submit */
+  useEffect(() => {
+    if (timeUntilNextSubmit <= 0) return;
+
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, lastSubmitTime + rateLimit - Date.now());
+      setTimeUntilNextSubmit(remaining);
+    }, 100);
+
+    return (): void => {
+      clearInterval(timer);
+    };
+  }, [lastSubmitTime, rateLimit, timeUntilNextSubmit]);
 
   /** Validate entry content */
   const validateContent = (value: string): string => {
@@ -47,6 +66,17 @@ export default function EntryInput({
   /** Handle form submission */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+
+    // Check rate limit
+    const now = Date.now();
+    const timeSinceLastSubmit = now - lastSubmitTime;
+    if (timeSinceLastSubmit < rateLimit) {
+      const remaining = Math.ceil((rateLimit - timeSinceLastSubmit) / 1000);
+      setError(`Please wait ${remaining} seconds before submitting again`);
+      setTimeUntilNextSubmit(rateLimit - timeSinceLastSubmit);
+      return;
+    }
+
     const validationError = validateContent(content);
     if (validationError) {
       setError(validationError);
@@ -60,6 +90,8 @@ export default function EntryInput({
       await onSubmit?.(content);
       setContent(''); // Clear input on success
       setShowSuccess(true);
+      setLastSubmitTime(Date.now());
+      setTimeUntilNextSubmit(rateLimit);
       // Hide success message after 3 seconds
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
@@ -85,8 +117,14 @@ export default function EntryInput({
         <p className="text-green-500 text-sm mt-1">{successMessage}</p>
       )}
       {/* Submit button with loading state */}
-      <Button type="submit" loading={isLoading} disabled={!!error || isLoading}>
-        Submit Entry
+      <Button
+        type="submit"
+        loading={isLoading}
+        disabled={!!error || isLoading || timeUntilNextSubmit > 0}
+      >
+        {timeUntilNextSubmit > 0
+          ? `Wait ${Math.ceil(timeUntilNextSubmit / 1000)}s`
+          : 'Submit Entry'}
       </Button>
     </form>
   );

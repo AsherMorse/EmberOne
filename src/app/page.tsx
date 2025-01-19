@@ -7,6 +7,9 @@ import type { ReactElement } from 'react';
 import EntryInput from '@/components/entries/EntryInput';
 import { trpc } from '@/lib/trpc';
 
+/** Rate limit for entry submissions in milliseconds */
+const RATE_LIMIT = 5000; // 5 seconds
+
 /** Renders the home page */
 export default function Home(): ReactElement {
   const utils = trpc.useContext();
@@ -41,6 +44,7 @@ export default function Home(): ReactElement {
           onSubmit={handleSubmit}
           isLoading={isLoading}
           successMessage="Entry submitted successfully!"
+          rateLimit={RATE_LIMIT}
         />
       </section>
     </main>
