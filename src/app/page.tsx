@@ -9,7 +9,7 @@ import { trpc } from '@/lib/trpc';
 
 /** Renders the home page */
 export default function Home(): ReactElement {
-  const utils = trpc.useUtils();
+  const utils = trpc.useContext();
 
   /** Handle entry submission */
   const { mutate: createEntry, isLoading } = trpc.entries.create.useMutation({
@@ -37,7 +37,11 @@ export default function Home(): ReactElement {
 
       {/* Entry input section */}
       <section className="max-w-2xl mx-auto">
-        <EntryInput onSubmit={handleSubmit} isLoading={isLoading} />
+        <EntryInput
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          successMessage="Entry submitted successfully!"
+        />
       </section>
     </main>
   );

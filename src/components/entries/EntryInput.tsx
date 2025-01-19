@@ -14,12 +14,19 @@ interface EntryInputProps {
   onSubmit?: (content: string) => Promise<void>;
   /** Whether the form is currently submitting */
   isLoading?: boolean;
+  /** Success message to display */
+  successMessage?: string;
 }
 
 /** Form component for submitting new text entries */
-export default function EntryInput({ onSubmit, isLoading = false }: EntryInputProps): ReactElement {
+export default function EntryInput({
+  onSubmit,
+  isLoading = false,
+  successMessage,
+}: EntryInputProps): ReactElement {
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   /** Validate entry content */
   const validateContent = (value: string): string => {
@@ -34,6 +41,7 @@ export default function EntryInput({ onSubmit, isLoading = false }: EntryInputPr
   const handleChange = (value: string): void => {
     setContent(value);
     setError(validateContent(value));
+    setShowSuccess(false);
   };
 
   /** Handle form submission */
@@ -46,10 +54,14 @@ export default function EntryInput({ onSubmit, isLoading = false }: EntryInputPr
     }
 
     setError('');
+    setShowSuccess(false);
 
     try {
       await onSubmit?.(content);
       setContent(''); // Clear input on success
+      setShowSuccess(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -68,6 +80,10 @@ export default function EntryInput({ onSubmit, isLoading = false }: EntryInputPr
         required
         error={error}
       />
+      {/* Success message */}
+      {showSuccess && successMessage && (
+        <p className="text-green-500 text-sm mt-1">{successMessage}</p>
+      )}
       {/* Submit button with loading state */}
       <Button type="submit" loading={isLoading} disabled={!!error || isLoading}>
         Submit Entry
