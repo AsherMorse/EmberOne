@@ -52,7 +52,7 @@ const eslintConfig = [
       'react-hooks/exhaustive-deps': 'warn',
 
       // General best practices
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': ['warn', { allow: ['log', 'warn', 'error'] }],
       eqeqeq: 'error',
       'no-unused-expressions': 'error',
       'no-var': 'error',
