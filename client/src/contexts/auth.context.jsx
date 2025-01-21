@@ -1,6 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 /**
+ * Available user roles in the system
+ */
+export const ROLES = {
+  CUSTOMER: 'customer',
+  AGENT: 'agent',
+  ADMIN: 'admin',
+};
+
+/**
  * AuthContext - Provides authentication state and methods throughout the application
  */
 const AuthContext = createContext(null);
@@ -67,7 +76,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('session', data.session.access_token);
       setUser(data.user);
 
-      return data.user.user_metadata?.role?.toLowerCase() || 'customer';
+      return data.user.user_metadata?.role?.toLowerCase() || ROLES.CUSTOMER;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -79,12 +88,50 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  /**
+   * Check if the user has one of the specified roles
+   * @param {string|string[]} roles - Single role or array of roles to check
+   * @returns {boolean} Whether the user has any of the specified roles
+   */
+  const hasRole = (roles) => {
+    if (!user) return false;
+    const userRole = user.user_metadata?.role?.toLowerCase();
+    if (!userRole) return false;
+    
+    if (Array.isArray(roles)) {
+      return roles.includes(userRole);
+    }
+    return roles === userRole;
+  };
+
+  /**
+   * Check if the user has permission to access a specific route/feature
+   * @param {string} requiredRole - The role required for access
+   * @returns {boolean} Whether the user has permission
+   */
+  const hasPermission = (requiredRole) => {
+    if (!user) return false;
+    const userRole = user.user_metadata?.role?.toLowerCase();
+    if (!userRole) return false;
+
+    // Admin has access to everything
+    if (userRole === ROLES.ADMIN) return true;
+
+    // Agents can access agent and customer routes
+    if (userRole === ROLES.AGENT && requiredRole !== ROLES.ADMIN) return true;
+
+    // Customers can only access customer routes
+    return userRole === requiredRole;
+  };
+
   const value = {
     user,
     loading,
     error,
     login,
     logout,
+    hasRole,
+    hasPermission,
     isAuthenticated: !!user,
     role: user?.user_metadata?.role?.toLowerCase() || null,
   };
