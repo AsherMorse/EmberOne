@@ -24,7 +24,7 @@ export const createUserProfile = async (user) => {
     const { data: profile, error } = await supabaseAdmin
       .from('profiles')
       .insert({
-        user_id: username,
+        user_id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || username,
         role: (user.user_metadata?.role || 'customer').toUpperCase(),

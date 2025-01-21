@@ -1,0 +1,22 @@
+id,user_id,email,full_name,role,created_at,updated_at
+0c4450d9-a33f-4337-b645-3d0e8698b1f4,customer2-test-id,customer2@example.com,Maria Garcia,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+10ca40fe-d5c8-46bd-b3be-cdd562c9af9e,customer2,customer2@example.com,customer2,CUSTOMER,2025-01-21 07:22:52.53,2025-01-21 07:22:52.53
+1b453631-fd51-480b-b683-5b74c5c80417,customer6-test-id,customer6@example.com,Emily White,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+40e82c2a-d7e4-4b60-90a6-b9390d5d8aac,agent1-test-id,agent1@emberone.com,Emma Rodriguez,AGENT,2025-01-21 07:22:00.664492,2025-01-21 07:22:00.664492
+46eb5d2b-a7ac-464f-b86b-da3355799305,agent5-test-id,agent5@emberone.com,Priya Patel,AGENT,2025-01-21 07:22:00.664492,2025-01-21 07:22:00.664492
+4fcae3bb-cc59-4780-bab1-e1535d22ee11,agent4-test-id,agent4@emberone.com,Thomas Anderson,AGENT,2025-01-21 07:22:00.664492,2025-01-21 07:22:00.664492
+6e0a37f2-715a-4e16-95a5-e099f8532dd1,e2b61f75-7f76-4841-8b45-f7414e9b87a2,test.agent@emberone.com,test.agent,AGENT,2025-01-21 08:16:13.238,2025-01-21 08:16:13.238
+7beadedd-01ba-4eee-9dd7-af11910e4284,admin3-test-id,admin3@emberone.com,Robert Kim,ADMIN,2025-01-21 07:22:00.598923,2025-01-21 07:22:00.598923
+7bef5bbc-1185-49d7-9b3a-36c26e4a37d2,agent2-test-id,agent2@emberone.com,James Wilson,AGENT,2025-01-21 07:22:00.664492,2025-01-21 07:22:00.664492
+7f326c81-ed75-4d45-a2d6-c88347516f36,admin1-test-id,admin1@emberone.com,Sarah Johnson,ADMIN,2025-01-21 07:22:00.598923,2025-01-21 07:22:00.598923
+8ee0b12d-0769-481e-ba2a-0328b4421ffa,admin2-test-id,admin2@emberone.com,Michael Chen,ADMIN,2025-01-21 07:22:00.598923,2025-01-21 07:22:00.598923
+b78b651a-5585-4daa-b188-bbc7480fc890,customer7-test-id,customer7@example.com,Carlos Martinez,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+bbd25475-7028-4a9a-a99d-9412bef6a5ab,248ed8f6-1dbc-45be-8d04-d969d41dfa28,test.customer@example.com,test.customer,CUSTOMER,2025-01-21 08:16:13.562,2025-01-21 08:16:13.562
+c4a2af94-d101-40bc-be54-f642548a8a0a,ab5d85a6-452d-4896-a41e-5b2416d47553,test.admin@emberone.com,test.admin,ADMIN,2025-01-21 08:16:12.97,2025-01-21 08:16:12.97
+ca3553d9-8f42-4ac5-b7fc-035cb7dcf6e1,customer1-test-id,customer1@example.com,Alex Thompson,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+cdf8caa4-af47-4add-bb67-8ea29c2b50d8,customer5-test-id,customer5@example.com,John Smith,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+cf0910c5-c74d-471f-bd27-128c24ba317f,customer3-test-id,customer3@example.com,David Brown,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+d75289b9-ddbe-49f9-b4a5-2735a7e187ee,customer4-test-id,customer4@example.com,Sophie Taylor,CUSTOMER,2025-01-21 07:22:00.728834,2025-01-21 07:22:00.728834
+da5e02ce-b41a-4155-83e0-6c50d9ce1ecd,agent2,agent2@emberone.com,agent2,AGENT,2025-01-21 07:22:52.23,2025-01-21 07:22:52.23
+e31c5bc9-7a40-4309-81fa-f691833a7a43,agent3-test-id,agent3@emberone.com,Lisa Park,AGENT,2025-01-21 07:22:00.664492,2025-01-21 07:22:00.664492
+e93c6cba-8a71-4025-86eb-d2aa1a804a87,admin2,admin2@emberone.com,admin2,ADMIN,2025-01-21 07:22:51.896,2025-01-21 07:22:51.896
