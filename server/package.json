@@ -14,7 +14,6 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.js\"",
-    "test": "mocha \"__tests__/**/*.test.js\" --recursive",
     "clean": "rm -rf node_modules coverage",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
