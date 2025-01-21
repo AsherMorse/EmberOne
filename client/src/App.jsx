@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ROLES } from './contexts/auth.context';
+import { ProtectedRoute } from './components/auth';
 import LandingPage from './pages/shared/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 
@@ -8,19 +10,41 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-
-        {/* Auth Routes - will add these later */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<div>Register Page Coming Soon</div>} />
 
-        {/* Customer Routes - will add these later */}
-        <Route path="/customer/*" element={<div>Customer Dashboard Coming Soon</div>} />
+        {/* Customer Routes */}
+        <Route 
+          path="/customer/*" 
+          element={
+            <ProtectedRoute 
+              component={() => <div>Customer Dashboard Coming Soon</div>}
+              requiredRole={ROLES.CUSTOMER}
+            />
+          } 
+        />
 
-        {/* Agent Routes - will add these later */}
-        <Route path="/agent/*" element={<div>Agent Dashboard Coming Soon</div>} />
+        {/* Agent Routes */}
+        <Route 
+          path="/agent/*" 
+          element={
+            <ProtectedRoute 
+              component={() => <div>Agent Dashboard Coming Soon</div>}
+              requiredRole={ROLES.AGENT}
+            />
+          } 
+        />
 
-        {/* Admin Routes - will add these later */}
-        <Route path="/admin/*" element={<div>Admin Dashboard Coming Soon</div>} />
+        {/* Admin Routes */}
+        <Route 
+          path="/admin/*" 
+          element={
+            <ProtectedRoute 
+              component={() => <div>Admin Dashboard Coming Soon</div>}
+              requiredRole={ROLES.ADMIN}
+            />
+          } 
+        />
 
         {/* Catch-all route for 404 */}
         <Route path="*" element={
