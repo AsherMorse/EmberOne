@@ -1,73 +1,94 @@
 import express from 'express';
+import { supabase } from '../config/supabase.js';
+import { validateAuthInput } from '../middleware/validation.js';
+import { requireAuth } from '../middleware/auth.js';
+import { createUserProfile } from '../utils/auth.utils.js';
 
 const router = express.Router();
 
-// Register route
-router.post('/register', async (req, res) => {
+/**
+ * @route POST /auth/signup
+ * @desc Register a new user and create profile
+ * @access Public
+ */
+router.post('/signup', validateAuthInput, async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { email, password, role = 'CUSTOMER' } = req.body;
 
-    // Check if user already exists
-    // const userExists = await pool.query(
-    //   'SELECT * FROM users WHERE username = $1 OR email = $2',
-    //   [username, email]
-    // );
-
-    if (false) {
-      const existingUser = false;
-      if (existingUser.username === username) {
-        return res.status(400).json({ message: 'Username already exists' });
+    // Sign up with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: process.env.CLIENT_URL,
+        data: { role: role.toUpperCase() }
       }
-      if (existingUser.email === email) {
-        return res.status(400).json({ message: 'Email already exists' });
-      }
-    }
+    });
 
-    // Create user
-    // const result = await pool.query(
-    //   'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email',
-    //   [username, email, hashedPassword]
-    // );
+    if (error) throw error;
 
-    const user = false;
+    // Create user profile in database using admin client
+    const profile = await createUserProfile(data.user);
 
     res.status(201).json({
-      message: 'User registered successfully',
-      user
+      message: 'Please check your email to confirm your account',
+      user: data.user,
+      profile
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Error registering user' });
+    console.error('Signup error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
-// Login route
-router.post('/login', async (req, res) => {
+/**
+ * @route POST /auth/signin
+ * @desc Sign in a user and create a new session
+ * @access Public
+ */
+router.post('/signin', validateAuthInput, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signInWithPassword(req.body);
+    if (error) throw error;
 
-    // Find user
-    // const result = await pool.query(
-    //   'SELECT * FROM users WHERE email = $1',
-    //   [email]
-    // );
-
-    if (false) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const user = false;
-
-    // Remove password from user object
-    delete user.password;
-
-    res.status(200).json({
-      message: 'Login successful',
-      user
+    res.json({
+      session: data.session,
+      user: data.user
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Error logging in' });
+    res.status(401).json({ error: error.message });
+  }
+});
+
+/**
+ * @route POST /auth/signout
+ * @desc Sign out user from all devices and invalidate current session
+ * @access Private
+ */
+router.post('/signout', requireAuth, async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
+    if (error) throw error;
+
+    res.json({ message: 'Signed out from all devices' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * @route GET /auth/session
+ * @desc Get current session
+ * @access Private
+ */
+router.get('/session', requireAuth, async (req, res) => {
+  try {
+    res.json({ 
+      user: req.user,
+      role: req.user.user_metadata?.role?.toUpperCase() || 'CUSTOMER'
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

@@ -13,7 +13,6 @@ import express from 'express';
 import cors from 'cors';
 import { securityMiddleware } from './config/security.config.js';
 import authRoutes from './routes/auth.routes.js';
-import counterRoutes from './routes/counter.routes.js';
 
 const app = express();
 
@@ -32,7 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/counter', counterRoutes);
 
 /**
  * Global error handler
