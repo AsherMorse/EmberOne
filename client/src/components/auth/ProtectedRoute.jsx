@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/auth.context';
  * @returns {React.Component} Protected route component
  */
 export default function ProtectedRoute({ component: Component, requiredRole }) {
-  const { isAuthenticated, loading, hasPermission } = useAuth();
+  const { isAuthenticated, loading, hasPermission, role } = useAuth();
   const location = useLocation();
 
   // Show nothing while checking auth state
