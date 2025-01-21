@@ -3,6 +3,7 @@ import { ROLES } from './contexts/auth.context';
 import { ProtectedRoute, AuthLoader } from './components/auth';
 import LandingPage from './pages/shared/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
+import DashboardPage from './pages/customer/DashboardPage';
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
             path="/customer/*" 
             element={
               <ProtectedRoute 
-                component={() => <div>Customer Dashboard Coming Soon</div>}
+                component={DashboardPage}
                 requiredRole={ROLES.CUSTOMER}
               />
             } 
