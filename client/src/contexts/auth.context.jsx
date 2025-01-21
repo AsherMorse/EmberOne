@@ -143,6 +143,7 @@ export function AuthProvider({ children }) {
     hasPermission,
     isAuthenticated: !!user,
     role: user?.user_metadata?.role?.toLowerCase() || null,
+    token: localStorage.getItem('session')
   };
 
   return (

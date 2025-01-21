@@ -4,7 +4,7 @@ import { Button } from '../ui';
 import { useAuth } from '../../contexts/auth.context';
 
 export default function Header({ showNav = true, navItems = [], userEmail }) {
-  const { logout } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -37,16 +37,16 @@ export default function Header({ showNav = true, navItems = [], userEmail }) {
               {userEmail}
             </span>
           )}
-          {showNav ? (
+          {isAuthenticated ? (
             <Button variant="ghost" onClick={handleLogout}>
               Logout
             </Button>
           ) : (
             <div className="space-x-4">
-              <Button variant="ghost" to="/login">
+              <Button variant="ghost" as={Link} to="/login">
                 Login
               </Button>
-              <Button variant="secondary" to="/register">
+              <Button variant="secondary" as={Link} to="/register">
                 Register
               </Button>
             </div>

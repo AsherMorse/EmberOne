@@ -4,6 +4,8 @@ import { ProtectedRoute, AuthLoader } from './components/auth';
 import LandingPage from './pages/shared/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/customer/DashboardPage';
+import TicketsPage from './pages/customer/TicketsPage';
+import CreateTicketPage from './pages/customer/CreateTicketPage';
 
 function App() {
   return (
@@ -16,15 +18,24 @@ function App() {
           <Route path="/register" element={<div>Register Page Coming Soon</div>} />
 
           {/* Customer Routes */}
-          <Route 
-            path="/customer/*" 
-            element={
-              <ProtectedRoute 
-                component={DashboardPage}
-                requiredRole={ROLES.CUSTOMER}
-              />
-            } 
-          />
+          <Route path="/customer" element={
+            <ProtectedRoute 
+              component={DashboardPage}
+              requiredRole={ROLES.CUSTOMER}
+            />
+          } />
+          <Route path="/customer/tickets" element={
+            <ProtectedRoute 
+              component={TicketsPage}
+              requiredRole={ROLES.CUSTOMER}
+            />
+          } />
+          <Route path="/customer/tickets/new" element={
+            <ProtectedRoute 
+              component={CreateTicketPage}
+              requiredRole={ROLES.CUSTOMER}
+            />
+          } />
 
           {/* Agent Routes */}
           <Route 
