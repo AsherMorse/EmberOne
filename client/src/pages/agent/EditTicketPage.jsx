@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CustomerLayout, AgentLayout } from '../../components/layout';
+import { AgentLayout } from '../../components/layout';
 import { Button, Input, Select } from '../../components/ui';
 import { useAuth } from '../../contexts/auth.context';
 
 export default function EditTicketPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, role } = useAuth();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
   const [ticket, setTicket] = useState({
     title: '',
     description: '',
@@ -29,9 +28,9 @@ export default function EditTicketPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/tickets/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${localStorage.getItem('session')}`,
             'Content-Type': 'application/json'
           }
         });
@@ -78,11 +77,11 @@ export default function EditTicketPage() {
         status: ticket.status
       };
 
-      const response = await fetch(`/api/tickets/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('session')}`
         },
         body: JSON.stringify(updates)
       });
@@ -92,8 +91,7 @@ export default function EditTicketPage() {
         throw new Error(errorData.error || 'Failed to update ticket');
       }
 
-      // Redirect back based on role
-      navigate(role === 'CUSTOMER' ? '/customer/tickets' : '/agent/tickets');
+      navigate('/agent/tickets');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,23 +100,21 @@ export default function EditTicketPage() {
   };
 
   const handleCancel = () => {
-    navigate(role === 'CUSTOMER' ? '/customer/tickets' : '/agent/tickets');
+    navigate('/agent/tickets');
   };
-
-  const Layout = role === 'CUSTOMER' ? CustomerLayout : AgentLayout;
 
   if (loading) {
     return (
-      <Layout>
+      <AgentLayout>
         <div className="flex justify-center items-center min-h-[400px]">
           <p className="text-muted-foreground">Loading ticket...</p>
         </div>
-      </Layout>
+      </AgentLayout>
     );
   }
 
   return (
-    <Layout>
+    <AgentLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Edit Ticket</h1>
@@ -140,7 +136,7 @@ export default function EditTicketPage() {
               value={ticket.title}
               onChange={handleChange('title')}
               required
-              disabled={saving || role === 'CUSTOMER'}
+              disabled={saving}
             />
           </div>
 
@@ -153,7 +149,7 @@ export default function EditTicketPage() {
               value={ticket.description}
               onChange={handleChange('description')}
               required
-              disabled={saving || role === 'CUSTOMER'}
+              disabled={saving}
             />
           </div>
 
@@ -163,7 +159,7 @@ export default function EditTicketPage() {
               value={ticket.priority}
               onChange={handleChange('priority')}
               required
-              disabled={saving || role === 'CUSTOMER'}
+              disabled={saving}
             >
               <option value="LOW">Low - Non-urgent issue</option>
               <option value="MEDIUM">Medium - Standard priority</option>
@@ -172,22 +168,20 @@ export default function EditTicketPage() {
             </Select>
           </div>
 
-          {role !== 'CUSTOMER' && (
-            <div>
-              <Select
-                label="Status"
-                value={ticket.status}
-                onChange={handleChange('status')}
-                required
-                disabled={saving}
-              >
-                <option value="OPEN">Open</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="WAITING">Waiting</option>
-                <option value="CLOSED">Closed</option>
-              </Select>
-            </div>
-          )}
+          <div>
+            <Select
+              label="Status"
+              value={ticket.status}
+              onChange={handleChange('status')}
+              required
+              disabled={saving}
+            >
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="WAITING">Waiting</option>
+              <option value="CLOSED">Closed</option>
+            </Select>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" loading={saving}>
@@ -204,6 +198,6 @@ export default function EditTicketPage() {
           </div>
         </form>
       </div>
-    </Layout>
+    </AgentLayout>
   );
 } 

@@ -52,9 +52,9 @@ export default function TicketsPage() {
         params.append('priority', filters.priority.toUpperCase());
       }
 
-      const response = await fetch(`/api/tickets?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${params}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${localStorage.getItem('session')}`,
           'Content-Type': 'application/json'
         }
       });

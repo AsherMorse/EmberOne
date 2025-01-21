@@ -1,23 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CustomerLayout, AgentLayout } from '../../components/layout';
-import { Button, Input, Select } from '../../components/ui';
+import { CustomerLayout } from '../../components/layout';
+import { Button } from '../../components/ui';
 import { useAuth } from '../../contexts/auth.context';
 
 export default function EditTicketPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, role } = useAuth();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
   const [ticket, setTicket] = useState({
     title: '',
     description: '',
     priority: 'LOW',
-    status: 'OPEN',
-    assignedAgentId: null
+    status: 'OPEN'
   });
 
   // Fetch ticket data
@@ -29,9 +27,9 @@ export default function EditTicketPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/tickets/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${localStorage.getItem('session')}`,
             'Content-Type': 'application/json'
           }
         });
@@ -52,10 +50,10 @@ export default function EditTicketPage() {
     fetchTicket();
   }, [token, id]);
 
-  const handleChange = (field) => (event) => {
+  const handleDescriptionChange = (event) => {
     setTicket(prev => ({
       ...prev,
-      [field]: event.target.value
+      description: event.target.value
     }));
   };
 
@@ -71,20 +69,15 @@ export default function EditTicketPage() {
       setSaving(true);
       setError(null);
 
-      const updates = {
-        title: ticket.title,
-        description: ticket.description,
-        priority: ticket.priority,
-        status: ticket.status
-      };
-
-      const response = await fetch(`/api/tickets/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('session')}`
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify({
+          description: ticket.description
+        })
       });
 
       if (!response.ok) {
@@ -92,8 +85,7 @@ export default function EditTicketPage() {
         throw new Error(errorData.error || 'Failed to update ticket');
       }
 
-      // Redirect back based on role
-      navigate(role === 'CUSTOMER' ? '/customer/tickets' : '/agent/tickets');
+      navigate('/customer/tickets');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,28 +94,26 @@ export default function EditTicketPage() {
   };
 
   const handleCancel = () => {
-    navigate(role === 'CUSTOMER' ? '/customer/tickets' : '/agent/tickets');
+    navigate('/customer/tickets');
   };
-
-  const Layout = role === 'CUSTOMER' ? CustomerLayout : AgentLayout;
 
   if (loading) {
     return (
-      <Layout>
+      <CustomerLayout>
         <div className="flex justify-center items-center min-h-[400px]">
           <p className="text-muted-foreground">Loading ticket...</p>
         </div>
-      </Layout>
+      </CustomerLayout>
     );
   }
 
   return (
-    <Layout>
+    <CustomerLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Edit Ticket</h1>
+          <h1 className="text-2xl font-semibold">View Ticket</h1>
           <p className="text-muted-foreground mt-1">
-            Update the ticket details below.
+            You can update the description of your ticket below.
           </p>
         </div>
 
@@ -134,16 +124,36 @@ export default function EditTicketPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Read-only ticket details */}
           <div>
-            <Input
-              label="Title"
-              value={ticket.title}
-              onChange={handleChange('title')}
-              required
-              disabled={saving || role === 'CUSTOMER'}
-            />
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Title
+            </label>
+            <div className="w-full px-3 py-2 rounded-lg border border-muted bg-muted/50 text-sm text-foreground">
+              {ticket.title}
+            </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Status
+              </label>
+              <div className="w-full px-3 py-2 rounded-lg border border-muted bg-muted/50 text-sm text-foreground">
+                {ticket.status.toLowerCase()}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Priority
+              </label>
+              <div className="w-full px-3 py-2 rounded-lg border border-muted bg-muted/50 text-sm text-foreground">
+                {ticket.priority.toLowerCase()}
+              </div>
+            </div>
+          </div>
+
+          {/* Editable description */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               Description
@@ -151,47 +161,15 @@ export default function EditTicketPage() {
             <textarea
               className="w-full px-3 py-2 rounded-lg border border-muted bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[200px]"
               value={ticket.description}
-              onChange={handleChange('description')}
+              onChange={handleDescriptionChange}
               required
-              disabled={saving || role === 'CUSTOMER'}
+              disabled={saving}
             />
           </div>
 
-          <div>
-            <Select
-              label="Priority"
-              value={ticket.priority}
-              onChange={handleChange('priority')}
-              required
-              disabled={saving || role === 'CUSTOMER'}
-            >
-              <option value="LOW">Low - Non-urgent issue</option>
-              <option value="MEDIUM">Medium - Standard priority</option>
-              <option value="HIGH">High - Urgent issue</option>
-              <option value="CRITICAL">Critical - Immediate attention needed</option>
-            </Select>
-          </div>
-
-          {role !== 'CUSTOMER' && (
-            <div>
-              <Select
-                label="Status"
-                value={ticket.status}
-                onChange={handleChange('status')}
-                required
-                disabled={saving}
-              >
-                <option value="OPEN">Open</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="WAITING">Waiting</option>
-                <option value="CLOSED">Closed</option>
-              </Select>
-            </div>
-          )}
-
           <div className="flex gap-3 pt-4">
             <Button type="submit" loading={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Update Description'}
             </Button>
             <Button 
               type="button" 
@@ -199,11 +177,11 @@ export default function EditTicketPage() {
               onClick={handleCancel}
               disabled={saving}
             >
-              Cancel
+              Back to Tickets
             </Button>
           </div>
         </form>
       </div>
-    </Layout>
+    </CustomerLayout>
   );
 } 

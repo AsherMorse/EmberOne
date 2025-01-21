@@ -6,9 +6,10 @@ import LoginPage from './pages/auth/LoginPage';
 import CustomerDashboardPage from './pages/customer/DashboardPage';
 import CustomerTicketsPage from './pages/customer/TicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
-import EditTicketPage from './pages/shared/EditTicketPage';
+import CustomerEditTicketPage from './pages/customer/EditTicketPage';
 import AgentDashboardPage from './pages/agent/DashboardPage';
 import AgentTicketsPage from './pages/agent/TicketsPage';
+import AgentEditTicketPage from './pages/agent/EditTicketPage';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -39,7 +40,7 @@ const router = createBrowserRouter(
       } />
       <Route path="/customer/tickets/:id" element={
         <ProtectedRoute 
-          component={EditTicketPage}
+          component={CustomerEditTicketPage}
           requiredRole={ROLES.CUSTOMER}
         />
       } />
@@ -59,7 +60,7 @@ const router = createBrowserRouter(
       } />
       <Route path="/agent/tickets/:id" element={
         <ProtectedRoute 
-          component={EditTicketPage}
+          component={AgentEditTicketPage}
           requiredRole={ROLES.AGENT}
         />
       } />

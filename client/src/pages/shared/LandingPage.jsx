@@ -12,7 +12,7 @@ export default function LandingPage() {
             Welcome to <span className="text-accent">EmberOne</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-12">
-            A modern ticket management solution designed for seamless customer support and team collaboration
+          Kindling Connections, One Ticket at a Time
           </p>
         </div>
 
