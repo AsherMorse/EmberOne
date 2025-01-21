@@ -4,6 +4,7 @@ export default function Input({
   name,
   type = 'text',
   required = false,
+  disabled = false,
   value,
   onChange,
   placeholder,
@@ -14,7 +15,12 @@ export default function Input({
   return (
     <div className={className}>
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-foreground mb-2">
+        <label 
+          htmlFor={id} 
+          className={`block text-sm font-medium mb-2 ${
+            disabled ? 'text-muted-foreground' : 'text-foreground'
+          }`}
+        >
           {label}
         </label>
       )}
@@ -23,10 +29,11 @@ export default function Input({
         name={name}
         type={type}
         required={required}
+        disabled={disabled}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full px-4 py-2 rounded-lg border border-muted bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+        className="w-full px-4 py-2 rounded-lg border border-muted bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted/50"
         {...props}
       />
       {error && (

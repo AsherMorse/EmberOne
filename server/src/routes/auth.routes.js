@@ -3,6 +3,9 @@ import { supabase } from '../config/supabase.js';
 import { validateAuthInput } from '../middleware/validation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { createUserProfile } from '../utils/auth.utils.js';
+import { db } from '../db/index.js';
+import { profiles } from '../db/schema/profiles.js';
+import { eq } from 'drizzle-orm';
 
 const router = express.Router();
 
@@ -89,6 +92,29 @@ router.get('/session', requireAuth, async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * @route GET /auth/profile
+ * @desc Get current user's profile
+ * @access Private
+ */
+router.get('/profile', requireAuth, async (req, res) => {
+  try {
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, req.user.id))
+      .limit(1);
+
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    res.json({ profile });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

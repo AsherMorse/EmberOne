@@ -1,8 +1,14 @@
 import { useState } from 'react';
 import { CustomerLayout } from '../../components/layout';
 import { Button, Input, Select } from '../../components/ui';
+import { useAuth } from '../../contexts/auth.context';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateTicketPage() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [ticket, setTicket] = useState({
     title: '',
     description: '',
@@ -16,9 +22,47 @@ export default function CreateTicketPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // TODO: Submit ticket
+    
+    if (!token) {
+      setError('Authentication required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: ticket.title,
+          description: ticket.description,
+          priority: ticket.priority.toUpperCase()
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create ticket');
+      }
+
+      // Redirect to tickets list on success
+      navigate('/customer/tickets');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate('/customer/tickets');
   };
 
   return (
@@ -31,6 +75,12 @@ export default function CreateTicketPage() {
           </p>
         </div>
 
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Input
@@ -39,6 +89,7 @@ export default function CreateTicketPage() {
               value={ticket.title}
               onChange={handleChange('title')}
               required
+              disabled={loading}
             />
           </div>
 
@@ -52,6 +103,7 @@ export default function CreateTicketPage() {
               value={ticket.description}
               onChange={handleChange('description')}
               required
+              disabled={loading}
             />
           </div>
 
@@ -61,6 +113,7 @@ export default function CreateTicketPage() {
               value={ticket.priority}
               onChange={handleChange('priority')}
               required
+              disabled={loading}
             >
               <option value="low">Low - Non-urgent issue</option>
               <option value="medium">Medium - Standard priority</option>
@@ -70,8 +123,17 @@ export default function CreateTicketPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit">Create Ticket</Button>
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="submit" loading={loading}>
+              {loading ? 'Creating...' : 'Create Ticket'}
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
           </div>
         </form>
       </div>

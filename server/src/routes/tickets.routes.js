@@ -75,9 +75,6 @@ router.get('/', requireAuth, validateTicketListQuery, async (req, res) => {
       return res.status(404).json({ error: 'User profile not found' });
     }
 
-    console.log('User role:', req.user.user_metadata.role);
-    console.log('User profile ID:', userProfile.id);
-
     // Build where conditions
     const conditions = [];
 
@@ -93,11 +90,9 @@ router.get('/', requireAuth, validateTicketListQuery, async (req, res) => {
 
     // Add role-based access control
     if (req.user.user_metadata.role === 'CUSTOMER') {
-      console.log('Adding customer condition');
       // Customers can only see their own tickets
       conditions.push(eq(tickets.customerId, userProfile.id));
     } else if (req.user.user_metadata.role === 'AGENT') {
-      console.log('Adding agent conditions');
       // Agents can see:
       // 1. Tickets assigned to them
       // 2. Any unassigned tickets
@@ -116,7 +111,6 @@ router.get('/', requireAuth, validateTicketListQuery, async (req, res) => {
 
     // Build query with conditions
     const whereClause = conditions.length ? and(...conditions) : undefined;
-    console.log('Where clause:', whereClause);
 
     // Execute query with pagination and sorting
     const [ticketResults, totalCount] = await Promise.all([
@@ -163,6 +157,17 @@ router.get('/:id', requireAuth, async (req, res) => {
     // Validate UUID format
     const ticketId = z.string().uuid().parse(req.params.id);
 
+    // Get the user's profile first
+    const [userProfile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, req.user.id))
+      .limit(1);
+
+    if (!userProfile) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+
     // Fetch ticket with customer and agent details
     const [ticket] = await db
       .select()
@@ -175,7 +180,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 
     // Check if user has access to this ticket
-    const isCustomerTicket = ticket.customerId === req.user.id;
+    const isCustomerTicket = ticket.customerId === userProfile.id;
     const isAgent = req.user.user_metadata.role === 'AGENT' || req.user.user_metadata.role === 'ADMIN';
 
     if (!isCustomerTicket && !isAgent) {
@@ -234,9 +239,30 @@ router.put('/:id', requireAuth, validateUUIDParam, validateTicketInput, async (r
     const isAdmin = req.user.user_metadata.role === 'ADMIN';
     const isAgent = req.user.user_metadata.role === 'AGENT';
 
+    // Validate status transitions FIRST
+    if (req.body.status) {
+      // Only agents and admins can change status
+      if (!isAgent && !isAdmin) {
+        return res.status(403).json({ error: 'Only agents can change ticket status' });
+      }
+
+      // For agents (not admins), they must be assigned to the ticket to change its status AT ALL
+      if (isAgent && !isAdmin && !isAssignedAgent) {
+        // Allow status change only if they're also assigning the ticket to themselves
+        if (!req.body.assignedAgentId || req.body.assignedAgentId !== userProfile.id) {
+          return res.status(403).json({ error: 'You must be assigned to the ticket to change its status' });
+        }
+      }
+    }
+
     // Customers can only update their own tickets if not closed
     if (isCustomerTicket && ticket.status === 'CLOSED') {
       return res.status(403).json({ error: 'Cannot update closed tickets' });
+    }
+
+    // If customer is trying to update, remove status from the request body
+    if (!isAgent && !isAdmin) {
+      delete req.body.status;
     }
 
     // Agents can update tickets that are:
@@ -272,15 +298,6 @@ router.put('/:id', requireAuth, validateUUIDParam, validateTicketInput, async (r
       // Non-admin agents can only assign tickets to themselves
       if (isAgent && !isAdmin && req.body.assignedAgentId !== userProfile.id) {
         return res.status(403).json({ error: 'Agents can only assign tickets to themselves' });
-      }
-    }
-
-    // Validate status transitions
-    if (req.body.status) {
-      // Cannot set unassigned tickets to IN_PROGRESS or CLOSED
-      const willBeAssigned = req.body.assignedAgentId !== undefined ? req.body.assignedAgentId !== null : ticket.assignedAgentId !== null;
-      if (!willBeAssigned && (req.body.status === 'IN_PROGRESS' || req.body.status === 'CLOSED')) {
-        return res.status(400).json({ error: 'Cannot set unassigned tickets to IN_PROGRESS or CLOSED' });
       }
     }
 
