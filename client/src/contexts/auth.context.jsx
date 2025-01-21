@@ -33,21 +33,30 @@ export function AuthProvider({ children }) {
         }
 
         // Validate token and get user data
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/validate`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/session`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error('Invalid session');
+          // Only clear session if it's an auth error (401/403)
+          if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('session');
+            throw new Error('Invalid session');
+          }
+          throw new Error(data.error || 'Failed to validate session');
         }
 
-        const data = await response.json();
         setUser(data.user);
       } catch (err) {
         setError(err.message);
-        localStorage.removeItem('session');
+        // Don't clear session on network errors
+        if (err.message === 'Invalid session') {
+          localStorage.removeItem('session');
+        }
       } finally {
         setLoading(false);
       }

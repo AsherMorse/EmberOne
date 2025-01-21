@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from '../../components/layout';
 import { Input, Button } from '../../components/ui';
+import { useAuth } from '../../contexts/auth.context';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,16 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, role } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      const from = location.state?.from?.pathname || `/${role}`;
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, role, navigate, location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,26 +29,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign in');
-      }
-
-      // Store the session token
-      localStorage.setItem('session', data.session.access_token);
+      const role = await login(formData.email, formData.password);
       
-      // Redirect based on user role
-      const role = data.user.user_metadata?.role?.toLowerCase() || 'customer';
-      navigate(`/${role}`);
+      // Navigate to the saved location or role-specific dashboard
+      const from = location.state?.from?.pathname || `/${role}`;
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -73,36 +69,38 @@ export default function LoginPage() {
             
             <Input
               label="Email"
-              id="email"
-              name="email"
               type="email"
-              required
+              name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
+              required
+              autoComplete="email"
               disabled={isLoading}
             />
 
             <Input
               label="Password"
-              id="password"
-              name="password"
               type="password"
-              required
+              name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
+              required
+              autoComplete="current-password"
               disabled={isLoading}
             />
 
-            <Button type="submit" fullWidth disabled={isLoading}>
+            <Button
+              type="submit"
+              fullWidth
+              disabled={isLoading}
+            >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link to="/register" className="text-accent hover:opacity-90 font-medium">
-                Sign up
+              <Link to="/register" className="text-accent hover:underline">
+                Register here
               </Link>
             </p>
           </form>
