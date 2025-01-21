@@ -61,7 +61,8 @@ router.get('/', requireAuth, validateTicketListQuery, async (req, res) => {
       status,
       priority,
       sort = 'createdAt',
-      order = 'desc'
+      order = 'desc',
+      assigned
     } = req.query;
 
     // Get the user's profile ID first
@@ -93,16 +94,19 @@ router.get('/', requireAuth, validateTicketListQuery, async (req, res) => {
       // Customers can only see their own tickets
       conditions.push(eq(tickets.customerId, userProfile.id));
     } else if (req.user.user_metadata.role === 'AGENT') {
-      // Agents can see:
-      // 1. Tickets assigned to them
-      // 2. Any unassigned tickets
-      conditions.push(
-        or(
-          eq(tickets.assignedAgentId, userProfile.id),
-          sql`${tickets.assignedAgentId} IS NULL`,
-          eq(tickets.customerId, userProfile.id)
-        )
-      );
+      if (assigned === 'true') {
+        // Only show tickets assigned to this agent
+        conditions.push(eq(tickets.assignedAgentId, userProfile.id));
+      } else {
+        // Show all accessible tickets (assigned + unassigned + created)
+        conditions.push(
+          or(
+            eq(tickets.assignedAgentId, userProfile.id),
+            sql`${tickets.assignedAgentId} IS NULL`,
+            eq(tickets.customerId, userProfile.id)
+          )
+        );
+      }
     }
     // Admins can see all tickets (no additional conditions)
 

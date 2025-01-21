@@ -2,6 +2,11 @@ import 'dotenv/config';
 import { db } from './index.js';
 import { profiles, tickets, comments, history } from './schema/index.js';
 
+// User IDs from profiles_rows-4.csv
+const ADMIN_ID = 'b1f3f5e3-3fca-410a-a370-dd28b05c4714';
+const AGENT_ID = '1a6689f4-8417-42f6-8281-e264daa0d873';
+const CUSTOMER_ID = '4be362ba-8a92-4913-8ae3-7b6fee9fd9e3';
+
 async function cleanDatabase() {
   console.log('Cleaning existing data...');
   // Delete in reverse order of dependencies
@@ -20,101 +25,32 @@ async function seedDatabase() {
 
     // Create test profiles
     console.log('Creating test profiles...');
-    const adminProfiles = await db.insert(profiles).values([
+    const adminProfile = await db.insert(profiles).values([
       {
-        userId: 'admin1-test-id',
-        email: 'admin1@emberone.com',
-        fullName: 'Sarah Johnson',
-        role: 'ADMIN'
-      },
-      {
-        userId: 'admin2-test-id',
-        email: 'admin2@emberone.com',
-        fullName: 'Michael Chen',
-        role: 'ADMIN'
-      },
-      {
-        userId: 'admin3-test-id',
-        email: 'admin3@emberone.com',
-        fullName: 'Robert Kim',
+        id: ADMIN_ID,
+        userId: '800491b9-ce58-4c00-8f25-0ab938f0570a',
+        email: 'test.admin@emberone.com',
+        fullName: 'Test Admin',
         role: 'ADMIN'
       }
     ]).returning();
 
-    const agentProfiles = await db.insert(profiles).values([
+    const agentProfile = await db.insert(profiles).values([
       {
-        userId: 'agent1-test-id',
-        email: 'agent1@emberone.com',
-        fullName: 'Emma Rodriguez',
-        role: 'AGENT'
-      },
-      {
-        userId: 'agent2-test-id',
-        email: 'agent2@emberone.com',
-        fullName: 'James Wilson',
-        role: 'AGENT'
-      },
-      {
-        userId: 'agent3-test-id',
-        email: 'agent3@emberone.com',
-        fullName: 'Lisa Park',
-        role: 'AGENT'
-      },
-      {
-        userId: 'agent4-test-id',
-        email: 'agent4@emberone.com',
-        fullName: 'Thomas Anderson',
-        role: 'AGENT'
-      },
-      {
-        userId: 'agent5-test-id',
-        email: 'agent5@emberone.com',
-        fullName: 'Priya Patel',
+        id: AGENT_ID,
+        userId: '9e9bf3c0-48f3-4866-afe4-652845f1aa0e',
+        email: 'test.agent@emberone.com',
+        fullName: 'Test Agent',
         role: 'AGENT'
       }
     ]).returning();
 
-    const customerProfiles = await db.insert(profiles).values([
+    const customerProfile = await db.insert(profiles).values([
       {
-        userId: 'customer1-test-id',
-        email: 'customer1@example.com',
-        fullName: 'Alex Thompson',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer2-test-id',
-        email: 'customer2@example.com',
-        fullName: 'Maria Garcia',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer3-test-id',
-        email: 'customer3@example.com',
-        fullName: 'David Brown',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer4-test-id',
-        email: 'customer4@example.com',
-        fullName: 'Sophie Taylor',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer5-test-id',
-        email: 'customer5@example.com',
-        fullName: 'John Smith',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer6-test-id',
-        email: 'customer6@example.com',
-        fullName: 'Emily White',
-        role: 'CUSTOMER'
-      },
-      {
-        userId: 'customer7-test-id',
-        email: 'customer7@example.com',
-        fullName: 'Carlos Martinez',
+        id: CUSTOMER_ID,
+        userId: '95271b3a-ba12-407b-afee-430870bbae09',
+        email: 'test.customer@example.com',
+        fullName: 'Test Customer',
         role: 'CUSTOMER'
       }
     ]).returning();
@@ -123,84 +59,63 @@ async function seedDatabase() {
     console.log('Creating test tickets...');
     const testTickets = await db.insert(tickets).values([
       {
-        title: 'Unable to access dashboard',
-        description: 'Getting 403 error when trying to access the main dashboard',
-        status: 'OPEN',
+        title: 'Cannot access my account',
+        description: 'I keep getting an error when trying to log in. Need urgent help!',
+        status: 'IN_PROGRESS',
         priority: 'HIGH',
-        customerId: customerProfiles[0].id,
-        assignedAgentId: agentProfiles[0].id
+        customerId: CUSTOMER_ID,
+        assignedAgentId: AGENT_ID,
+        createdAt: new Date('2024-01-15T10:00:00Z'),
+        updatedAt: new Date('2024-01-15T14:30:00Z')
       },
       {
         title: 'Feature request: Dark mode',
-        description: 'Would love to have a dark mode option for the platform',
-        status: 'IN_PROGRESS',
+        description: 'Would love to have a dark mode option for the dashboard.',
+        status: 'OPEN',
         priority: 'LOW',
-        customerId: customerProfiles[1].id,
-        assignedAgentId: agentProfiles[1].id
+        customerId: CUSTOMER_ID,
+        assignedAgentId: AGENT_ID,
+        createdAt: new Date('2024-01-10T09:15:00Z'),
+        updatedAt: new Date('2024-01-10T09:15:00Z')
       },
       {
         title: 'Payment processing failed',
-        description: 'Transaction ID: TX123456 failed during checkout',
-        status: 'IN_PROGRESS',
-        priority: 'CRITICAL',
-        customerId: customerProfiles[2].id,
-        assignedAgentId: agentProfiles[0].id
-      },
-      {
-        title: 'Account verification pending',
-        description: 'Submitted documents 3 days ago, still waiting for verification',
-        status: 'WAITING',
-        priority: 'MEDIUM',
-        customerId: customerProfiles[3].id,
-        assignedAgentId: agentProfiles[2].id
-      },
-      {
-        title: 'Integration documentation unclear',
-        description: 'API documentation for webhook integration is outdated',
+        description: 'Transaction failed multiple times. Error code: XYZ123',
         status: 'CLOSED',
-        priority: 'MEDIUM',
-        customerId: customerProfiles[0].id,
-        assignedAgentId: agentProfiles[1].id
-      },
-      {
-        title: 'Mobile app crashes on startup',
-        description: 'iOS app version 2.1.0 crashes immediately after splash screen',
-        status: 'IN_PROGRESS',
         priority: 'CRITICAL',
-        customerId: customerProfiles[4].id,
-        assignedAgentId: agentProfiles[3].id
+        customerId: CUSTOMER_ID,
+        assignedAgentId: AGENT_ID,
+        createdAt: new Date('2024-01-05T16:20:00Z'),
+        updatedAt: new Date('2024-01-07T11:45:00Z'),
+        closedAt: new Date('2024-01-07T11:45:00Z')
       },
       {
-        title: 'Bulk import feature request',
-        description: 'Need ability to import customer data via CSV',
-        status: 'IN_PROGRESS',
+        title: 'Need help with API integration',
+        description: 'Looking for documentation on how to integrate with your REST API',
+        status: 'OPEN',
         priority: 'MEDIUM',
-        customerId: customerProfiles[5].id,
-        assignedAgentId: agentProfiles[2].id
+        customerId: CUSTOMER_ID,
+        createdAt: new Date('2024-01-20T08:30:00Z'),
+        updatedAt: new Date('2024-01-20T08:30:00Z')
       },
       {
-        title: 'Email notifications not received',
-        description: 'Not receiving any email notifications for ticket updates',
+        title: 'Bug report: Console errors',
+        description: 'Getting JavaScript errors in console when loading dashboard',
         status: 'OPEN',
         priority: 'HIGH',
-        customerId: customerProfiles[6].id,
-        assignedAgentId: agentProfiles[4].id
+        customerId: CUSTOMER_ID,
+        createdAt: new Date('2024-01-21T13:45:00Z'),
+        updatedAt: new Date('2024-01-21T13:45:00Z')
       },
       {
-        title: 'Security vulnerability report',
-        description: 'Found potential XSS vulnerability in comment system',
-        status: 'IN_PROGRESS',
-        priority: 'CRITICAL',
-        customerId: customerProfiles[2].id,
-        assignedAgentId: agentProfiles[0].id
-      },
-      {
-        title: 'API rate limiting too restrictive',
-        description: 'Current rate limits are blocking our integration testing',
-        status: 'IN_PROGRESS',
-        priority: 'HIGH',
-        customerId: customerProfiles[3].id,
-        assignedAgentId: agentProfiles[1].id
+        title: 'Additional information needed',
+        description: 'Please provide more details about your system configuration',
+        status: 'WAITING',
+        priority: 'MEDIUM',
+        customerId: CUSTOMER_ID,
+        assignedAgentId: AGENT_ID,
+        createdAt: new Date('2024-01-18T15:20:00Z'),
+        updatedAt: new Date('2024-01-19T10:00:00Z')
       }
     ]).returning();
 
@@ -222,7 +137,7 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.customerId,
-            content: 'Any updates on this request?',
+            content: 'Any updates on this issue?',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'customer_portal' }
@@ -230,53 +145,10 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.assignedAgentId,
-            content: 'Working on implementing this feature. Will update soon.',
+            content: 'I am investigating this issue. Will update shortly.',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'agent_dashboard' }
-          },
-          {
-            ticketId: ticket.id,
-            authorId: ticket.assignedAgentId,
-            content: 'Design team needs to review the mockups first.',
-            type: 'INTERNAL',
-            isInternal: true,
-            metadata: { source: 'agent_dashboard' }
-          }
-        );
-      } else if (ticket.priority === 'CRITICAL') {
-        comments.push(
-          {
-            ticketId: ticket.id,
-            authorId: ticket.customerId,
-            content: 'This is blocking our business operations!',
-            type: 'USER',
-            isInternal: false,
-            metadata: { source: 'customer_portal' }
-          },
-          {
-            ticketId: ticket.id,
-            authorId: adminProfiles[0].id,
-            content: 'Escalated to engineering team.',
-            type: 'INTERNAL',
-            isInternal: true,
-            metadata: { source: 'admin_dashboard' }
-          },
-          {
-            ticketId: ticket.id,
-            authorId: ticket.assignedAgentId,
-            content: 'Engineering team is investigating the issue.',
-            type: 'USER',
-            isInternal: false,
-            metadata: { source: 'agent_dashboard' }
-          },
-          {
-            ticketId: ticket.id,
-            authorId: adminProfiles[1].id,
-            content: 'All hands on deck - this needs immediate attention.',
-            type: 'INTERNAL',
-            isInternal: true,
-            metadata: { source: 'admin_dashboard' }
           }
         );
       } else if (ticket.status === 'WAITING') {
@@ -284,7 +156,7 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.assignedAgentId,
-            content: 'Waiting for additional information from the customer.',
+            content: 'Could you please provide your system specifications?',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'agent_dashboard' }
@@ -292,7 +164,7 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.customerId,
-            content: 'What additional information do you need?',
+            content: 'What specific information do you need?',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'customer_portal' }
@@ -303,7 +175,7 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.assignedAgentId,
-            content: 'Documentation has been updated. Please check the new version.',
+            content: 'Issue has been resolved. Please confirm.',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'agent_dashboard' }
@@ -311,7 +183,7 @@ async function seedDatabase() {
           {
             ticketId: ticket.id,
             authorId: ticket.customerId,
-            content: 'Perfect, this resolves my issue. Thank you!',
+            content: 'Yes, everything is working now. Thank you!',
             type: 'USER',
             isInternal: false,
             metadata: { source: 'customer_portal' }
@@ -333,88 +205,38 @@ async function seedDatabase() {
           actorId: ticket.assignedAgentId,
           action: 'status_changed',
           oldValue: { status: 'OPEN' },
-          newValue: { status: 'IN_PROGRESS' },
+          newValue: { status: ticket.status },
           metadata: { 
-            reason: 'Agent assigned',
+            reason: 'Status updated by agent',
             source: 'agent_dashboard'
           }
         });
       }
       if (ticket.priority === 'CRITICAL') {
-        entries.push(
-          {
-            ticketId: ticket.id,
-            actorId: adminProfiles[0].id,
-            action: 'priority_changed',
-            oldValue: { priority: 'HIGH' },
-            newValue: { priority: 'CRITICAL' },
-            metadata: { 
-              reason: 'Business critical issue',
-              source: 'admin_dashboard'
-            }
-          },
-          {
-            ticketId: ticket.id,
-            actorId: adminProfiles[0].id,
-            action: 'status_changed',
-            oldValue: { status: 'IN_PROGRESS' },
-            newValue: { status: 'CRITICAL' },
-            metadata: { 
-              reason: 'Escalated to critical',
-              source: 'admin_dashboard'
-            }
-          },
-          {
-            ticketId: ticket.id,
-            actorId: adminProfiles[1].id,
-            action: 'team_assigned',
-            oldValue: { team: null },
-            newValue: { team: 'engineering' },
-            metadata: { 
-              reason: 'Requires immediate engineering attention',
-              source: 'admin_dashboard'
-            }
-          }
-        );
-      }
-      if (ticket.status === 'WAITING') {
         entries.push({
           ticketId: ticket.id,
-          actorId: ticket.assignedAgentId,
-          action: 'status_changed',
-          oldValue: { status: 'IN_PROGRESS' },
-          newValue: { status: 'WAITING' },
+          actorId: ADMIN_ID,
+          action: 'priority_changed',
+          oldValue: { priority: 'HIGH' },
+          newValue: { priority: 'CRITICAL' },
           metadata: { 
-            reason: 'Waiting for customer response',
-            source: 'agent_dashboard'
+            reason: 'Escalated due to business impact',
+            source: 'admin_dashboard'
           }
         });
       }
       if (ticket.status === 'CLOSED') {
-        entries.push(
-          {
-            ticketId: ticket.id,
-            actorId: ticket.assignedAgentId,
-            action: 'status_changed',
-            oldValue: { status: 'IN_PROGRESS' },
-            newValue: { status: 'CLOSED' },
-            metadata: { 
-              reason: 'Resolution confirmed',
-              source: 'agent_dashboard'
-            }
-          },
-          {
-            ticketId: ticket.id,
-            actorId: ticket.customerId,
-            action: 'satisfaction_rating',
-            oldValue: { rating: null },
-            newValue: { rating: 5 },
-            metadata: { 
-              feedback: 'Great service!',
-              source: 'customer_portal'
-            }
+        entries.push({
+          ticketId: ticket.id,
+          actorId: ticket.customerId,
+          action: 'satisfaction_rating',
+          oldValue: { rating: null },
+          newValue: { rating: 5 },
+          metadata: { 
+            feedback: 'Great service!',
+            source: 'customer_portal'
           }
-        );
+        });
       }
       return entries;
     });
@@ -428,4 +250,14 @@ async function seedDatabase() {
   }
 }
 
-seedDatabase(); 
+// Execute seeding if this file is run directly
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  seedDatabase()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}
+
+export { seedDatabase }; 

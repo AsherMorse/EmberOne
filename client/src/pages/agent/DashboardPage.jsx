@@ -28,7 +28,7 @@ export default function DashboardPage() {
         const statuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
         const responses = await Promise.all(
           statuses.map(status =>
-            fetch(`/api/tickets?status=${status}&limit=1`, {
+            fetch(`/api/tickets?status=${status}&limit=1&assigned=true`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         });
 
         // Fetch assigned tickets
-        const assignedResponse = await fetch('/api/tickets?limit=5', {
+        const assignedResponse = await fetch('/api/tickets?limit=5&assigned=true', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -106,25 +106,25 @@ export default function DashboardPage() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 rounded-lg border border-muted bg-card">
-          <p className="text-sm text-muted-foreground mb-1">Unassigned</p>
+          <p className="text-sm text-muted-foreground mb-1">My Open</p>
           <p className="text-2xl font-bold text-accent">
             {loading ? '...' : stats.open}
           </p>
         </div>
         <div className="p-4 rounded-lg border border-muted bg-card">
-          <p className="text-sm text-muted-foreground mb-1">In Progress</p>
+          <p className="text-sm text-muted-foreground mb-1">My In Progress</p>
           <p className="text-2xl font-bold text-accent">
             {loading ? '...' : stats.in_progress}
           </p>
         </div>
         <div className="p-4 rounded-lg border border-muted bg-card">
-          <p className="text-sm text-muted-foreground mb-1">Waiting</p>
+          <p className="text-sm text-muted-foreground mb-1">My Waiting</p>
           <p className="text-2xl font-bold text-accent">
             {loading ? '...' : stats.waiting}
           </p>
         </div>
         <div className="p-4 rounded-lg border border-muted bg-card">
-          <p className="text-sm text-muted-foreground mb-1">Closed Today</p>
+          <p className="text-sm text-muted-foreground mb-1">My Closed Today</p>
           <p className="text-2xl font-bold text-accent">
             {loading ? '...' : stats.closed}
           </p>
