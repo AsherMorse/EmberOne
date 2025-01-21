@@ -6,6 +6,7 @@
  * 
  * Environment Variables:
  * - PORT: Server port number (default: 3000)
+ * - NODE_ENV: Environment mode (development/production)
  */
 
 import dotenv from 'dotenv';
@@ -17,7 +18,10 @@ dotenv.config();
 
 // Set up port configuration
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
 app.set('port', PORT);
+app.set('env', NODE_ENV);
 
 // Create and configure HTTP server
 const server = http.createServer(app);
@@ -39,13 +43,15 @@ function onError(error) {
     throw error;
   }
 
+  const bind = typeof PORT === 'string' ? `Pipe ${PORT}` : `Port ${PORT}`;
+
   switch (error.code) {
     case 'EACCES':
-      console.error(`Port ${PORT} requires elevated privileges`);
+      console.error(`${bind} requires elevated privileges`);
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(`Port ${PORT} is already in use`);
+      console.error(`${bind} is already in use`);
       process.exit(1);
       break;
     default:
@@ -58,5 +64,13 @@ function onError(error) {
  * Logs when server starts listening successfully
  */
 function onListening() {
-  console.log(`Server listening on port ${PORT}`);
+  const addr = server.address();
+  const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
+  
+  console.log(`
+    Server Details:
+    - Environment: ${NODE_ENV}
+    - Listening on: ${bind}
+    - Time: ${new Date().toISOString()}
+  `);
 } 
