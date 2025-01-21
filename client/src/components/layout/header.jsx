@@ -13,17 +13,17 @@ export default function Header({ showNav = true, navItems = [], userEmail }) {
   };
 
   return (
-    <header className="border-b border-muted py-4">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
+    <header className="border-b border-muted py-4 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <div className="flex items-center gap-6">
           <Logo />
           {showNav && navItems.length > 0 && (
-            <nav className="hidden md:flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-6">
               {navItems.map(item => (
                 <Link 
                   key={item.href}
                   to={item.href} 
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {item.label}
                 </Link>
@@ -31,7 +31,7 @@ export default function Header({ showNav = true, navItems = [], userEmail }) {
             </nav>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {userEmail && (
             <span className="text-sm text-muted-foreground hidden md:inline">
               {userEmail}

@@ -23,12 +23,12 @@ export default function CustomerLayout({ children }) {
 
       {/* Mobile Navigation */}
       <nav className="md:hidden border-b border-muted">
-        <div className="container mx-auto px-4 py-2 flex gap-4">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-2 flex gap-6">
           {navItems.map(item => (
             <Link 
               key={item.href}
               to={item.href} 
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               {item.label}
             </Link>
@@ -37,7 +37,7 @@ export default function CustomerLayout({ children }) {
       </nav>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
     </div>
