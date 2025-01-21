@@ -23,23 +23,3 @@ export const formatError = (message, code, details = null) => ({
     ...(details && { details })
   }
 });
-
-/**
- * Format a paginated response
- * @param {Array} items - Array of items for the current page
- * @param {Object} meta - Pagination metadata
- * @param {number} meta.total - Total number of items
- * @param {number} meta.page - Current page number
- * @param {number} meta.limit - Items per page
- * @returns {Object} Formatted paginated response
- */
-export const formatPaginated = (items, { total, page, limit }) => ({
-  success: true,
-  data: items,
-  meta: {
-    total,
-    page,
-    limit,
-    pages: Math.ceil(total / limit)
-  }
-}); 
