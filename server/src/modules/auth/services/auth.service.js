@@ -1,8 +1,5 @@
 import { supabase } from '../../../config/supabase.js';
-import { supabaseAdmin } from '../../../config/supabase.js';
-import { db } from '../../../db/index.js';
-import { profiles } from '../../../db/schema/profiles.js';
-import { eq } from 'drizzle-orm';
+import { profileService } from '../../profiles/services/profile.service.js';
 
 /**
  * Service class for handling authentication-related operations
@@ -17,6 +14,7 @@ class AuthService {
    * @returns {Promise<Object>} Registration result with user and profile data
    */
   async signUp({ email, password, role = 'CUSTOMER' }) {
+    // Create auth user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -27,14 +25,25 @@ class AuthService {
     });
 
     if (error) throw error;
+    if (!data.user) throw new Error('Failed to create user');
 
-    // Create user profile in database
-    const profile = await this.createUserProfile(data.user);
+    // Create user profile
+    const profile = await profileService.createProfile(data.user);
 
     return {
       message: 'Please check your email to confirm your account',
-      user: data.user,
-      profile
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.user_metadata?.role || 'CUSTOMER',
+        emailConfirmed: data.user.email_confirmed_at ? true : false
+      },
+      profile: {
+        id: profile.id,
+        fullName: profile.fullName,
+        email: profile.email,
+        role: profile.role
+      }
     };
   }
 
@@ -52,10 +61,31 @@ class AuthService {
     });
 
     if (error) throw error;
+    if (!data.session || !data.user) {
+      throw new Error('Invalid credentials');
+    }
+
+    // Get user profile
+    const profile = await profileService.getProfile(data.user.id);
 
     return {
-      session: data.session,
-      user: data.user
+      session: {
+        accessToken: data.session.access_token,
+        expiresAt: data.session.expires_at
+      },
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.user_metadata?.role || 'CUSTOMER',
+        emailConfirmed: data.user.email_confirmed_at ? true : false,
+        lastSignIn: data.user.last_sign_in_at
+      },
+      profile: {
+        id: profile.id,
+        fullName: profile.fullName,
+        email: profile.email,
+        role: profile.role
+      }
     };
   }
 
@@ -74,56 +104,14 @@ class AuthService {
    * @returns {Promise<Object>} User profile data
    */
   async getProfile(userId) {
-    const [profile] = await db
-      .select()
-      .from(profiles)
-      .where(eq(profiles.userId, userId))
-      .limit(1);
-
-    if (!profile) {
-      throw new Error('Profile not found');
-    }
-
-    return profile;
+    return profileService.getProfile(userId);
   }
 
   /**
-   * Create a new user profile in the database
-   * @param {Object} user - User object from Supabase Auth
-   * @returns {Promise<Object>} Created profile data
+   * Update user profile
    */
-  async createUserProfile(user) {
-    try {
-      if (!user?.id || !user?.email) {
-        throw new Error('Invalid user data for profile creation');
-      }
-
-      // Extract username from email for default full name
-      const username = user.email.split('@')[0];
-
-      const [profile] = await db
-        .insert(profiles)
-        .values({
-          userId: user.id,
-          email: user.email,
-          fullName: user.user_metadata?.full_name || username,
-          role: (user.user_metadata?.role || 'CUSTOMER').toUpperCase(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
-
-      return profile;
-    } catch (error) {
-      // Log the full error for debugging
-      console.error('Detailed error creating user profile:', {
-        error: error.message,
-        code: error.code,
-        detail: error.detail,
-        stack: error.stack
-      });
-      throw new Error(`Failed to create user profile: ${error.message}`);
-    }
+  async updateProfile(userId, updates) {
+    return profileService.updateProfile(userId, updates);
   }
 }
 

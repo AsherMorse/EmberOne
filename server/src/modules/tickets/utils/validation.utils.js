@@ -1,30 +1,10 @@
-import { formatError } from './response.utils.js';
-
-/**
- * Validate ticket title
- * @param {string} title - Title to validate
- * @returns {boolean} True if title is valid
- */
-const isValidTitle = (title) => {
-  return title && title.length >= 5 && title.length <= 100;
-};
-
-/**
- * Validate ticket description
- * @param {string} description - Description to validate
- * @returns {boolean} True if description is valid
- */
-const isValidDescription = (description) => {
-  return description && description.length <= 2000;
-};
-
 /**
  * Validate ticket priority
  * @param {string} priority - Priority to validate
  * @returns {boolean} True if priority is valid
  */
 const isValidPriority = (priority) => {
-  const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+  const validPriorities = ['HIGH', 'MEDIUM', 'LOW'];
   return validPriorities.includes(priority?.toUpperCase());
 };
 
@@ -34,96 +14,101 @@ const isValidPriority = (priority) => {
  * @returns {boolean} True if status is valid
  */
 const isValidStatus = (status) => {
-  const validStatuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
+  const validStatuses = ['OPEN', 'IN_PROGRESS', 'CLOSED'];
   return validStatuses.includes(status?.toUpperCase());
 };
 
 /**
- * Validate create ticket input middleware
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @param {import('express').NextFunction} next - Express next function
+ * Validate ticket creation input
  */
-export const validateCreateTicket = (req, res, next) => {
+export const validateTicketCreation = (req, res, next) => {
   const { title, description, priority } = req.body;
   const errors = [];
 
-  if (!title) {
+  if (!title?.trim()) {
     errors.push('Title is required');
-  } else if (!isValidTitle(title)) {
-    errors.push('Title must be between 5 and 100 characters');
   }
 
-  if (!description) {
+  if (!description?.trim()) {
     errors.push('Description is required');
-  } else if (!isValidDescription(description)) {
-    errors.push('Description must not exceed 2000 characters');
   }
 
   if (!priority) {
     errors.push('Priority is required');
   } else if (!isValidPriority(priority)) {
-    errors.push('Invalid priority value');
+    errors.push('Invalid priority. Must be LOW, MEDIUM, HIGH, or CRITICAL');
   }
 
   if (errors.length > 0) {
-    return res.status(400).json(
-      formatError('Validation failed', 400, { errors })
-    );
+    return res.status(400).json({
+      message: 'Validation failed',
+      code: 400,
+      errors
+    });
   }
 
   next();
 };
 
 /**
- * Validate update ticket input middleware
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @param {import('express').NextFunction} next - Express next function
+ * Validate ticket update input based on user role
  */
-export const validateUpdateTicket = (req, res, next) => {
-  const { title, description, priority, status } = req.body;
+export const validateTicketUpdate = (req, res, next) => {
   const errors = [];
-  const role = req.user?.role;
+  const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
 
-  // Validate customer-updatable fields
-  if (title && !isValidTitle(title)) {
-    errors.push('Title must be between 5 and 100 characters');
-  }
-
-  if (description && !isValidDescription(description)) {
-    errors.push('Description must not exceed 2000 characters');
-  }
-
-  if (priority && !isValidPriority(priority)) {
-    errors.push('Invalid priority value');
-  }
-
-  // Validate agent-only fields
-  if (role === 'AGENT') {
-    if (status && !isValidStatus(status)) {
-      errors.push('Invalid status value');
+  if (role === 'CUSTOMER') {
+    const { title, description, priority } = req.body;
+    
+    if (title !== undefined && !title.trim()) {
+      errors.push('Title cannot be empty');
     }
-  } else if (status) {
-    errors.push('Only agents can update ticket status');
+    
+    if (description !== undefined && !description.trim()) {
+      errors.push('Description cannot be empty');
+    }
+    
+    if (priority !== undefined && !isValidPriority(priority)) {
+      errors.push('Invalid priority. Must be LOW, MEDIUM, HIGH, or CRITICAL');
+    }
+
+    // Prevent customers from updating status
+    if (req.body.status !== undefined) {
+      errors.push('Customers cannot update ticket status');
+    }
+  } else if (role === 'AGENT') {
+    const { status } = req.body;
+    
+    if (!status) {
+      errors.push('Status is required');
+    } else if (!isValidStatus(status)) {
+      errors.push('Invalid status. Must be OPEN, IN_PROGRESS, WAITING, or CLOSED');
+    }
+
+    // Prevent agents from updating other fields
+    const restrictedFields = ['title', 'description', 'priority'];
+    const attemptedFields = restrictedFields.filter(field => req.body[field] !== undefined);
+    
+    if (attemptedFields.length > 0) {
+      errors.push(`Agents can only update status. Cannot update: ${attemptedFields.join(', ')}`);
+    }
   }
 
   if (errors.length > 0) {
-    return res.status(400).json(
-      formatError('Validation failed', 400, { errors })
-    );
+    return res.status(400).json({
+      message: 'Validation failed',
+      code: 400,
+      errors
+    });
   }
 
   next();
 };
 
 /**
- * Validate assign ticket input middleware
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @param {import('express').NextFunction} next - Express next function
+ * Validate ticket assignment input
  */
-export const validateAssignTicket = (req, res, next) => {
+export const validateTicketAssignment = (req, res, next) => {
   const { agentId } = req.body;
   const errors = [];
 
@@ -131,11 +116,19 @@ export const validateAssignTicket = (req, res, next) => {
     errors.push('Agent ID is required');
   }
 
+  // Ensure only agents can assign tickets
+  const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
+  if (role !== 'AGENT') {
+    errors.push('Only agents can assign tickets');
+  }
+
   if (errors.length > 0) {
-    return res.status(400).json(
-      formatError('Validation failed', 400, { errors })
-    );
+    return res.status(400).json({
+      message: 'Validation failed',
+      code: 400,
+      errors
+    });
   }
 
   next();
-}; 
+};

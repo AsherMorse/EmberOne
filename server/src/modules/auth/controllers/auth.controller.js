@@ -1,5 +1,14 @@
 import { authService } from '../services/auth.service.js';
-import { formatSuccess, formatError } from '../utils/response.utils.js';
+import { profileService } from '../../profiles/services/profile.service.js';
+
+/**
+ * Extract user info from request
+ */
+const getUserInfo = (req) => {
+  const userId = req.user?.id;
+  const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
+  return { userId, role };
+};
 
 /**
  * Controller for handling authentication-related routes
@@ -7,76 +16,134 @@ import { formatSuccess, formatError } from '../utils/response.utils.js';
 class AuthController {
   /**
    * Register a new user
-   * @param {import('express').Request} req - Express request object
-   * @param {import('express').Response} res - Express response object
    */
   async signUp(req, res) {
     try {
       const result = await authService.signUp(req.body);
-      res.status(201).json(formatSuccess(result));
+      res.status(201).json(result);
     } catch (error) {
-      console.error('Signup error:', error);
-      res.status(400).json(formatError(error.message, 400));
+      console.error('Sign up error:', error);
+      if (error.message === 'Email already registered') {
+        return res.status(409).json({
+          message: error.message,
+          code: 409
+        });
+      }
+      res.status(500).json({
+        message: 'Failed to create account',
+        code: 500
+      });
     }
   }
 
   /**
-   * Sign in an existing user
-   * @param {import('express').Request} req - Express request object
-   * @param {import('express').Response} res - Express response object
+   * Sign in a user
    */
   async signIn(req, res) {
     try {
       const result = await authService.signIn(req.body);
-      res.json(formatSuccess(result));
+      res.json(result);
     } catch (error) {
-      res.status(401).json(formatError(error.message, 401));
+      console.error('Sign in error:', error);
+      if (error.message === 'Invalid credentials') {
+        return res.status(401).json({
+          message: error.message,
+          code: 401
+        });
+      }
+      res.status(500).json({
+        message: 'Failed to sign in',
+        code: 500
+      });
     }
   }
 
   /**
-   * Sign out user from all devices
-   * @param {import('express').Request} req - Express request object
-   * @param {import('express').Response} res - Express response object
+   * Sign out a user
    */
   async signOut(req, res) {
     try {
       await authService.signOut();
-      res.json(formatSuccess({ message: 'Signed out from all devices' }));
+      res.json({
+        message: 'Signed out successfully'
+      });
     } catch (error) {
-      res.status(400).json(formatError(error.message, 400));
+      console.error('Sign out error:', error);
+      res.status(500).json({
+        message: 'Failed to sign out',
+        code: 500
+      });
     }
   }
 
   /**
    * Get current session information
-   * @param {import('express').Request} req - Express request object
-   * @param {import('express').Response} res - Express response object
    */
   async getSession(req, res) {
     try {
-      const sessionData = {
-        user: req.user,
-        role: req.user.user_metadata?.role?.toUpperCase() || 'CUSTOMER'
-      };
-      res.json(formatSuccess(sessionData));
+      if (!req.user) {
+        return res.status(401).json({
+          message: 'No active session',
+          code: 401
+        });
+      }
+
+      res.json({
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.user_metadata?.role || 'CUSTOMER',
+          emailConfirmed: req.user.email_confirmed_at ? true : false,
+          lastSignIn: req.user.last_sign_in_at
+        }
+      });
     } catch (error) {
-      res.status(400).json(formatError(error.message, 400));
+      console.error('Session error:', error);
+      res.status(500).json({
+        message: 'Failed to get session',
+        code: 500
+      });
     }
   }
 
   /**
-   * Get current user's profile
-   * @param {import('express').Request} req - Express request object
-   * @param {import('express').Response} res - Express response object
+   * Get user profile
    */
   async getProfile(req, res) {
     try {
-      const profile = await authService.getProfile(req.user.id);
-      res.json(formatSuccess({ profile }));
+      // Profile is already attached by middleware
+      res.json({ profile: req.profile });
     } catch (error) {
-      const status = error.message === 'Profile not found' ? 404 : 500;
-      res.status(status).json(formatError(error.message, status));
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        message: 'Failed to get profile',
+        code: 500
+      });
+    }
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(req, res) {
+    try {
+      const profile = await profileService.updateProfile(req.user.id, req.body);
+      res.json({
+        message: 'Profile updated successfully',
+        profile
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      if (error.message === 'Profile not found') {
+        return res.status(404).json({
+          message: error.message,
+          code: 404
+        });
+      }
+      res.status(500).json({
+        message: 'Failed to update profile',
+        code: 500
+      });
     }
   }
 }

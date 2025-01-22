@@ -1,5 +1,4 @@
 import { supabase } from '../../../config/supabase.js';
-import { formatError } from '../utils/response.utils.js';
 
 /**
  * Middleware to validate session and attach user to request
@@ -12,9 +11,10 @@ export const requireAuth = async (req, res, next) => {
     // Get session from request header
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json(
-        formatError('Missing or invalid authorization header', 401)
-      );
+      return res.status(401).json({
+        message: 'Missing or invalid authorization header',
+        code: 401
+      });
     }
 
     const token = authHeader.split(' ')[1];
@@ -23,9 +23,10 @@ export const requireAuth = async (req, res, next) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {
-      return res.status(401).json(
-        formatError('Invalid or expired session', 401)
-      );
+      return res.status(401).json({
+        message: 'Invalid or expired session',
+        code: 401
+      });
     }
 
     // Attach user to request for use in protected routes
@@ -33,9 +34,11 @@ export const requireAuth = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(401).json(
-      formatError('Authentication failed', 401, { details: error.message })
-    );
+    res.status(401).json({
+      message: 'Authentication failed',
+      code: 401,
+      details: error.message
+    });
   }
 };
 
@@ -47,21 +50,24 @@ export const requireAuth = async (req, res, next) => {
 export const requireRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json(
-        formatError('User not authenticated', 401)
-      );
+      return res.status(401).json({
+        message: 'User not authenticated',
+        code: 401
+      });
     }
 
     const userRole = (req.user.user_metadata?.role || 'CUSTOMER').toUpperCase();
     const normalizedRoles = roles.map(role => role.toUpperCase());
     
     if (!normalizedRoles.includes(userRole)) {
-      return res.status(403).json(
-        formatError('Insufficient permissions', 403, {
+      return res.status(403).json({
+        message: 'Insufficient permissions',
+        code: 403,
+        details: {
           required: normalizedRoles,
           current: userRole
-        })
-      );
+        }
+      });
     }
 
     next();

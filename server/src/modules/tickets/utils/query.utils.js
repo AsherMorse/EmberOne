@@ -1,96 +1,71 @@
-import { desc, asc, eq, and, isNull } from 'drizzle-orm';
+import { db } from '../../../db/index.js';
+import { tickets } from '../../../db/schema/tickets.js';
+import { profiles } from '../../../db/schema/profiles.js';
+import { eq, desc, asc } from 'drizzle-orm';
 
 /**
- * Calculate pagination parameters
- * @param {Object} options Pagination options
- * @param {number} options.page Page number
- * @param {number} options.limit Items per page
- * @param {number} totalItems Total number of items
- * @returns {Object} Pagination metadata
+ * Common ticket selector with customer info
  */
-export const getPaginationMetadata = (options, totalItems) => {
-  const page = options.page || 1;
-  const limit = options.limit || 20;
+export const ticketSelector = {
+  id: tickets.id,
+  title: tickets.title,
+  description: tickets.description,
+  status: tickets.status,
+  priority: tickets.priority,
+  customerId: tickets.customerId,
+  assignedAgentId: tickets.assignedAgentId,
+  createdAt: tickets.createdAt,
+  updatedAt: tickets.updatedAt,
+  closedAt: tickets.closedAt,
+  customer: {
+    id: profiles.id,
+    fullName: profiles.fullName,
+    email: profiles.email
+  }
+};
+
+/**
+ * Create base query for tickets with customer info
+ */
+export const createBaseQuery = () => {
+  return db
+    .select(ticketSelector)
+    .from(tickets)
+    .leftJoin(profiles, eq(tickets.customerId, profiles.id));
+};
+
+/**
+ * Apply access filters based on user role
+ */
+export const applyAccessFilters = (query, profileId, role, options = {}) => {
+  // Customers can only see their own tickets
+  if (role === 'CUSTOMER') {
+    return query.where(eq(tickets.customerId, profileId));
+  } 
+
+  // Agents can see all tickets or only their assigned ones
+  if (role === 'AGENT') {
+    return options.onlyAssigned 
+      ? query.where(eq(tickets.assignedAgentId, profileId))
+      : query;
+  }
+
+  // Admins can see all tickets
+  return query;
+};
+
+/**
+ * Apply sorting to a query
+ */
+export const applySorting = (query, { sortBy = 'createdAt', sortOrder = 'desc' } = {}) => {
+  const orderBy = sortOrder.toLowerCase() === 'asc' ? asc : desc;
+  return query.orderBy(orderBy(tickets[sortBy]));
+};
+
+/**
+ * Apply pagination to a query
+ */
+export const applyPagination = (query, { page = 1, limit = 10 } = {}) => {
   const offset = (page - 1) * limit;
-
-  return {
-    pagination: {
-      page,
-      limit,
-      offset,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit),
-      hasNextPage: page * limit < totalItems,
-      hasPrevPage: page > 1
-    }
-  };
+  return query.limit(limit).offset(offset);
 };
-
-/**
- * Get sort parameters for query
- * @param {Object} options Sort options
- * @param {string} options.sort Sort field
- * @param {string} options.order Sort order
- * @param {Object} model Database model/schema
- * @returns {Function} Sort function for query
- */
-export const getSortParams = (options, model) => {
-  const sort = options.sort || 'createdAt';
-  const order = options.order || 'desc';
-  
-  const sortField = model[sort] || model.createdAt;
-  const sortOrder = order === 'asc' ? asc : desc;
-  
-  return sortOrder(sortField);
-};
-
-/**
- * Build filter conditions for tickets
- * @param {Object} options Filter options
- * @param {string} options.status Filter by status
- * @param {string} options.priority Filter by priority
- * @param {string} options.customerId Filter by customer
- * @param {string} options.assignedAgentId Filter by assigned agent
- * @param {boolean} options.assigned Filter by assignment status
- * @param {Object} model Database model/schema
- * @returns {Object} Query conditions
- */
-export const buildFilterConditions = (options, model) => {
-  const conditions = [];
-
-  const {
-    status,
-    priority,
-    customerId,
-    assignedAgentId,
-    assigned
-  } = options;
-
-  if (status) conditions.push(eq(model.status, status));
-  if (priority) conditions.push(eq(model.priority, priority));
-  if (customerId) conditions.push(eq(model.customerId, customerId));
-  if (assignedAgentId) conditions.push(eq(model.assignedAgentId, assignedAgentId));
-  if (assigned === true) conditions.push(isNull(model.assignedAgentId).not());
-  if (assigned === false) conditions.push(isNull(model.assignedAgentId));
-
-  return conditions.length > 0 ? and(...conditions) : undefined;
-};
-
-/**
- * Build complete query parameters
- * @param {Object} options Query options
- * @param {Object} model Database model/schema
- * @returns {Object} Query parameters including pagination, sorting, and filtering
- */
-export const buildQueryParams = (options, model) => {
-  const filterConditions = buildFilterConditions(options, model);
-  const sortParams = getSortParams(options, model);
-  const { pagination } = getPaginationMetadata(options, 0); // Initial pagination without total
-
-  return {
-    where: filterConditions,
-    orderBy: sortParams,
-    limit: pagination.limit,
-    offset: pagination.offset
-  };
-}; 

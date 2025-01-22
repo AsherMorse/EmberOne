@@ -1,59 +1,84 @@
 import { Router } from 'express';
-import { ticketController } from './controllers/tickets.controller.js';
+import { ticketController } from './controllers/ticket.controller.js';
 import { requireAuth } from '../auth/middleware/auth.middleware.js';
-import {
-  requireAgent,
-  requireCustomer,
-  verifyTicketAccess,
-  handleTicketErrors
-} from './middleware/auth.middleware.js';
-import {
-  validateCreateTicket,
-  validateUpdateTicket,
-  validateAssignTicket
+import { resolveProfileId } from '../profiles/middleware/profile.middleware.js';
+import { 
+  validateTicketCreation, 
+  validateTicketUpdate, 
+  validateTicketAssignment 
 } from './utils/validation.utils.js';
+import {
+  requireCustomer,
+  requireAgent,
+  requireTicketAccess,
+  validateUpdateAccess
+} from './middleware/rbac.middleware.js';
+
+// TODO: Import validation middleware
+// import { validateTicketInput } from './utils/validation.utils.js';
 
 const router = Router();
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
 
-// List tickets (filtered by role)
-router.get('/tickets', ticketController.listTickets);
+// Apply profile middleware to all routes
+router.use(resolveProfileId);
 
-// Create ticket (customers only)
-router.post(
-  '/tickets',
+/**
+ * @route GET /api/tickets
+ * @desc List all tickets (filtered by user role)
+ * @access Private
+ */
+// TODO: Add validation for query parameters (pagination, filters)
+router.get('/', ticketController.listTickets);
+
+/**
+ * @route POST /api/tickets
+ * @desc Create a new ticket (Customers only)
+ * @access Private
+ */
+router.post('/', 
   requireCustomer,
-  validateCreateTicket,
+  validateTicketCreation, 
   ticketController.createTicket
 );
 
-// Get single ticket
-router.get(
-  '/tickets/:id',
-  verifyTicketAccess,
+/**
+ * @route GET /api/tickets/:id
+ * @desc Get a single ticket
+ * @access Private
+ */
+// TODO: Add validation for ticket ID parameter
+router.get('/:id', 
+  requireTicketAccess, 
   ticketController.getTicket
 );
 
-// Update ticket
-router.patch(
-  '/tickets/:id',
-  verifyTicketAccess,
-  validateUpdateTicket,
+/**
+ * @route PATCH /api/tickets/:id
+ * @desc Update a ticket (different fields based on role)
+ * @access Private
+ */
+// TODO: Add validation for update payload based on user role
+router.patch('/:id', 
+  requireTicketAccess,
+  validateUpdateAccess,
+  validateTicketUpdate, 
   ticketController.updateTicket
 );
 
-// Assign ticket (agents only)
-router.post(
-  '/tickets/:id/assign',
+/**
+ * @route POST /api/tickets/:id/assign
+ * @desc Assign a ticket to an agent (Agents only)
+ * @access Private
+ */
+// TODO: Add validation for agent assignment
+router.post('/:id/assign', 
   requireAgent,
-  verifyTicketAccess,
-  validateAssignTicket,
+  requireTicketAccess,
+  validateTicketAssignment, 
   ticketController.assignTicket
 );
 
-// Error handler
-router.use(handleTicketErrors);
-
-export default router; 
+export default router;

@@ -13,8 +13,7 @@ import express from 'express';
 import cors from 'cors';
 import { securityMiddleware } from './config/security.config.js';
 import authRoutes from './modules/auth/routes.js';
-import ticketRoutes from './routes/tickets.routes.js';
-import { formatError } from './modules/auth/utils/response.utils.js';
+import ticketRoutes from './modules/tickets/routes.js';
 
 const app = express();
 
@@ -39,19 +38,16 @@ app.use('/api/tickets', ticketRoutes);
  * 404 handler for undefined routes
  */
 app.use((req, res) => {
-  res.status(404).json(
-    formatError('Route not found', 404, { path: req.originalUrl })
-  );
+  res.status(404).json({
+    message: 'Route not found',
+    code: 404,
+    details: { path: req.originalUrl }
+  });
 });
 
 /**
  * Global error handler
  * Catches all unhandled errors and sends a formatted response
- * 
- * @param {Error} err - Error object
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @param {import('express').NextFunction} next - Express next middleware function
  */
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', {
@@ -66,13 +62,11 @@ app.use((err, req, res, next) => {
     ? { stack: err.stack }
     : undefined;
 
-  res.status(statusCode).json(
-    formatError(
-      err.message || 'Internal server error',
-      statusCode,
-      errorDetails
-    )
-  );
+  res.status(statusCode).json({
+    message: err.message || 'Internal server error',
+    code: statusCode,
+    ...(errorDetails && { details: errorDetails })
+  });
 });
 
 export default app; 
