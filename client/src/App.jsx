@@ -3,6 +3,7 @@ import { ROLES } from './contexts/auth.context';
 import { ProtectedRoute, AuthLoader } from './components/auth';
 import LandingPage from './pages/shared/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import CustomerDashboardPage from './pages/customer/DashboardPage';
 import CustomerTicketsPage from './pages/customer/TicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
@@ -17,7 +18,7 @@ const router = createBrowserRouter(
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<div>Register Page Coming Soon</div>} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* Customer Routes */}
       <Route path="/customer" element={

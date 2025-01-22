@@ -29,17 +29,18 @@ export default function EditTicketPage() {
 
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('session')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch ticket');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch ticket');
         }
 
         const data = await response.json();
-        setTicket(data.ticket);
+        setTicket(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -70,10 +71,10 @@ export default function EditTicketPage() {
       setError(null);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('session')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           description: ticket.description
@@ -82,8 +83,11 @@ export default function EditTicketPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update ticket');
+        throw new Error(errorData.message || 'Failed to update ticket');
       }
+
+      const data = await response.json();
+      setTicket(data.ticket);
 
       navigate('/customer/tickets');
     } catch (err) {

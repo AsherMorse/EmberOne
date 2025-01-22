@@ -28,7 +28,7 @@ export default function DashboardPage() {
         const statuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
         const responses = await Promise.all(
           statuses.map(status =>
-            fetch(`/api/tickets?status=${status}&limit=1&assigned=true`, {
+            fetch(`/api/tickets?status=${status}&limit=1&onlyAssigned=true`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ export default function DashboardPage() {
         });
 
         // Fetch assigned tickets
-        const assignedResponse = await fetch('/api/tickets?limit=5&assigned=true', {
+        const assignedResponse = await fetch('/api/tickets?limit=5&onlyAssigned=true', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

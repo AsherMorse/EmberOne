@@ -11,9 +11,9 @@ export default function TicketsPage() {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false
+    total: 0,
+    limit: 5,
+    pages: 1
   });
 
   const [filters, setFilters] = useState({
@@ -37,20 +37,8 @@ export default function TicketsPage() {
       // Build query params
       const params = new URLSearchParams({
         page: pagination.page,
-        limit: 10,
-        sort: filters.sort === 'newest' ? 'createdAt' : 
-              filters.sort === 'oldest' ? 'createdAt' :
-              filters.sort === 'updated' ? 'updatedAt' :
-              'createdAt',
-        order: filters.sort === 'oldest' ? 'asc' : 'desc'
+        limit: 5
       });
-
-      if (filters.status !== 'all') {
-        params.append('status', filters.status.toUpperCase());
-      }
-      if (filters.priority !== 'all') {
-        params.append('priority', filters.priority.toUpperCase());
-      }
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${params}`, {
         headers: {
@@ -66,19 +54,20 @@ export default function TicketsPage() {
 
       const data = await response.json();
       
-      setTickets(data.tickets);
-      setPagination({
-        page: data.pagination.page,
-        totalPages: data.pagination.totalPages,
-        hasNextPage: data.pagination.hasNextPage,
-        hasPrevPage: data.pagination.hasPrevPage
-      });
+      setTickets(data.tickets || []);
+      setPagination(prev => ({
+        ...prev,
+        total: parseInt(data.pagination.total) || 0,
+        page: parseInt(data.pagination.page) || 1,
+        limit: parseInt(data.pagination.limit) || 5,
+        pages: parseInt(data.pagination.pages) || 1
+      }));
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [token, pagination.page, filters]);
+  }, [token, pagination.page]);
 
   useEffect(() => {
     if (token) {
@@ -98,6 +87,7 @@ export default function TicketsPage() {
   };
 
   const handlePageChange = (newPage) => {
+    setLoading(true);
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
@@ -154,9 +144,52 @@ export default function TicketsPage() {
       {/* Tickets Table */}
       <div className="rounded-lg border border-muted overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Loading tickets...</p>
-          </div>
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Title</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Priority</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Created</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Last Update</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-muted">
+              {[...Array(5)].map((_, index) => (
+                <tr key={index} className="hover:bg-muted/50">
+                  <td className="p-4 text-sm">
+                    <div className="text-primary animate-pulse">Loading ticket title...</div>
+                  </td>
+                  <td className="p-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-500 animate-pulse">
+                      loading...
+                    </span>
+                  </td>
+                  <td className="p-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-500 animate-pulse">
+                      loading...
+                    </span>
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground animate-pulse">
+                    Loading date...
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground animate-pulse">
+                    Loading date...
+                  </td>
+                  <td className="p-4 text-sm">
+                    <Button
+                      variant="ghost"
+                      className="text-sm"
+                      disabled
+                    >
+                      View Details
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : tickets.length > 0 ? (
           <table className="w-full">
             <thead className="bg-muted/50">
@@ -212,29 +245,31 @@ export default function TicketsPage() {
       </div>
 
       {/* Pagination */}
-      {tickets.length > 0 && (
-        <div className="flex justify-between items-center mt-4">
-          <p className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              disabled={!pagination.hasPrevPage}
-              onClick={() => handlePageChange(pagination.page - 1)}
-            >
-              Previous
-            </Button>
-            <Button 
-              variant="outline"
-              disabled={!pagination.hasNextPage}
-              onClick={() => handlePageChange(pagination.page + 1)}
-            >
-              Next
-            </Button>
-          </div>
+      <div className="flex justify-between items-center mt-4">
+        <p className="text-sm text-muted-foreground">
+          {loading ? (
+            'Loading...'
+          ) : (
+            `Showing page ${pagination.page} of ${pagination.pages}`
+          )}
+        </p>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            disabled={loading || pagination.page <= 1}
+            onClick={() => handlePageChange(pagination.page - 1)}
+          >
+            Previous
+          </Button>
+          <Button 
+            variant="outline"
+            disabled={loading || pagination.page >= pagination.pages}
+            onClick={() => handlePageChange(pagination.page + 1)}
+          >
+            Next
+          </Button>
         </div>
-      )}
+      </div>
     </CustomerLayout>
   );
 }

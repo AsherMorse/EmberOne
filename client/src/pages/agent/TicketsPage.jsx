@@ -12,9 +12,8 @@ export default function TicketsPage() {
   const [userProfile, setUserProfile] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false
+    total: 0,
+    limit: 5
   });
 
   const [filters, setFilters] = useState({
@@ -43,14 +42,27 @@ export default function TicketsPage() {
 
     const fetchTickets = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
+        const queryParams = new URLSearchParams({
+          page: pagination.page,
+          limit: 5
+        }).toString();
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('session')}`
           }
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
-        setTickets(data.tickets);
+        
+        setTickets(data.tickets || []);
+        setPagination(prev => ({
+          ...prev,
+          total: parseInt(data.pagination.total) || 0,
+          page: parseInt(data.pagination.page) || 1,
+          limit: parseInt(data.pagination.limit) || 5,
+          pages: parseInt(data.pagination.pages) || 1
+        }));
       } catch (err) {
         console.error('Error fetching tickets:', err);
         setError(err.message);
@@ -61,7 +73,7 @@ export default function TicketsPage() {
 
     fetchProfile();
     fetchTickets();
-  }, []);
+  }, [pagination.page]);
 
   const handleFilterChange = (key) => (event) => {
     setFilters(prev => ({
@@ -73,42 +85,56 @@ export default function TicketsPage() {
   };
 
   const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setLoading(true); // Set loading before changing page
+    setPagination(prev => ({
+      ...prev,
+      page: newPage
+    }));
   };
 
   const handleClaimTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}`, {
-        method: 'PUT',
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/assign`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          assignedAgentId: userProfile.id
+          agentId: userProfile.id
         })
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error);
+        throw new Error(data.message || 'Failed to claim ticket');
       }
 
       // Refresh tickets after claiming
-      const ticketsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
+      const queryParams = new URLSearchParams({
+        page: pagination.page,
+        limit: 5
+      }).toString();
+
+      const ticketsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session')}`
         }
       });
       const data = await ticketsResponse.json();
       setTickets(data.tickets);
+      setPagination(prev => ({
+        ...prev,
+        total: data.total,
+        page: data.page,
+        limit: data.limit
+      }));
     } catch (err) {
       console.error('Error claiming ticket:', err);
       setError(err.message);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -155,17 +181,69 @@ export default function TicketsPage() {
 
       {/* Error State */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
-          <p className="text-red-600">{error}</p>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
+          <p className="text-destructive">{error}</p>
         </div>
       )}
 
       {/* Tickets Table */}
       <div className="rounded-lg border border-muted overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Loading tickets...</p>
-          </div>
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Title</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Priority</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Created</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Assignment</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-muted">
+              {[...Array(5)].map((_, index) => (
+                <tr key={index} className="hover:bg-muted/50">
+                  <td className="p-4 text-sm">
+                    <div className="text-primary animate-pulse">Loading ticket title...</div>
+                  </td>
+                  <td className="p-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-500 animate-pulse">
+                      loading...
+                    </span>
+                  </td>
+                  <td className="p-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-500 animate-pulse">
+                      loading...
+                    </span>
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground animate-pulse">
+                    Loading date...
+                  </td>
+                  <td className="p-4 text-sm">
+                    <span className="text-blue-500 animate-pulse">Loading assignment...</span>
+                  </td>
+                  <td className="p-4 text-sm">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled
+                      >
+                        Claim
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : tickets.length > 0 ? (
           <table className="w-full">
             <thead className="bg-muted/50">
@@ -188,20 +266,20 @@ export default function TicketsPage() {
                   </td>
                   <td className="p-4 text-sm">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      ticket.status === 'OPEN' ? 'bg-blue-100 text-blue-800' :
-                      ticket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                      ticket.status === 'WAITING' ? 'bg-purple-100 text-purple-800' :
-                      'bg-green-100 text-green-800'
+                      ticket.status === 'OPEN' ? 'bg-blue-500/20 text-blue-500' :
+                      ticket.status === 'IN_PROGRESS' ? 'bg-yellow-500/20 text-yellow-500' :
+                      ticket.status === 'WAITING' ? 'bg-purple-500/20 text-purple-500' :
+                      'bg-green-500/20 text-green-500'
                     }`}>
                       {ticket.status.toLowerCase().replace('_', ' ')}
                     </span>
                   </td>
                   <td className="p-4 text-sm">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      ticket.priority === 'LOW' ? 'bg-gray-100 text-gray-800' :
-                      ticket.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-800' :
-                      ticket.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
+                      ticket.priority === 'LOW' ? 'bg-gray-500/20 text-gray-500' :
+                      ticket.priority === 'MEDIUM' ? 'bg-blue-500/20 text-blue-500' :
+                      ticket.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-500' :
+                      'bg-red-500/20 text-red-500'
                     }`}>
                       {ticket.priority.toLowerCase()}
                     </span>
@@ -211,11 +289,11 @@ export default function TicketsPage() {
                   </td>
                   <td className="p-4 text-sm">
                     {ticket.assignedAgentId === userProfile?.id ? (
-                      <span className="text-green-600 font-medium">Assigned to you</span>
+                      <span className="text-green-500 font-medium">Assigned to you</span>
                     ) : ticket.assignedAgentId ? (
-                      <span className="text-yellow-600">Assigned to another agent</span>
+                      <span className="text-yellow-500">Assigned to another agent</span>
                     ) : (
-                      <span className="text-blue-600">Unassigned</span>
+                      <span className="text-blue-500">Unassigned</span>
                     )}
                   </td>
                   <td className="p-4 text-sm">
@@ -251,29 +329,31 @@ export default function TicketsPage() {
       </div>
 
       {/* Pagination */}
-      {tickets.length > 0 && (
-        <div className="flex justify-between items-center mt-4">
-          <p className="text-sm text-muted-foreground">
-            Page {pagination.page} of {pagination.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              disabled={!pagination.hasPrevPage}
-              onClick={() => handlePageChange(pagination.page - 1)}
-            >
-              Previous
-            </Button>
-            <Button 
-              variant="outline"
-              disabled={!pagination.hasNextPage}
-              onClick={() => handlePageChange(pagination.page + 1)}
-            >
-              Next
-            </Button>
-          </div>
+      <div className="flex justify-between items-center mt-4">
+        <p className="text-sm text-muted-foreground">
+          {loading ? (
+            'Loading...'
+          ) : (
+            `Showing page ${pagination.page} of ${pagination.pages}`
+          )}
+        </p>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            disabled={loading || pagination.page <= 1}
+            onClick={() => handlePageChange(pagination.page - 1)}
+          >
+            Previous
+          </Button>
+          <Button 
+            variant="outline"
+            disabled={loading || pagination.page >= pagination.pages}
+            onClick={() => handlePageChange(pagination.page + 1)}
+          >
+            Next
+          </Button>
         </div>
-      )}
+      </div>
     </AgentLayout>
   );
 } 

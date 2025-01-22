@@ -13,7 +13,7 @@ export default function Header({ showNav = true, navItems = [], userEmail }) {
   };
 
   return (
-    <header className="border-b border-muted py-4 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-b border-muted py-4 sticky top-0 bg-background">
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
         <div className="flex items-center gap-6">
           <Logo />
