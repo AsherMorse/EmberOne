@@ -36,11 +36,12 @@ export default function EditTicketPage() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch ticket');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch ticket');
         }
 
         const data = await response.json();
-        setTicket(data.ticket);
+        setTicket(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -71,14 +72,11 @@ export default function EditTicketPage() {
       setError(null);
 
       const updates = {
-        title: ticket.title,
-        description: ticket.description,
-        priority: ticket.priority,
         status: ticket.status
       };
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('session')}`
@@ -88,7 +86,7 @@ export default function EditTicketPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update ticket');
+        throw new Error(errorData.message || 'Failed to update ticket');
       }
 
       navigate('/agent/tickets');
@@ -117,9 +115,9 @@ export default function EditTicketPage() {
     <AgentLayout>
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Edit Ticket</h1>
+          <h1 className="text-2xl font-semibold">Update Ticket Status</h1>
           <p className="text-muted-foreground mt-1">
-            Update the ticket details below.
+            As an agent, you can update the ticket status.
           </p>
         </div>
 
@@ -134,9 +132,7 @@ export default function EditTicketPage() {
             <Input
               label="Title"
               value={ticket.title}
-              onChange={handleChange('title')}
-              required
-              disabled={saving}
+              disabled={true}
             />
           </div>
 
@@ -147,9 +143,7 @@ export default function EditTicketPage() {
             <textarea
               className="w-full px-3 py-2 rounded-lg border border-muted bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-h-[200px]"
               value={ticket.description}
-              onChange={handleChange('description')}
-              required
-              disabled={saving}
+              disabled={true}
             />
           </div>
 
@@ -157,9 +151,7 @@ export default function EditTicketPage() {
             <Select
               label="Priority"
               value={ticket.priority}
-              onChange={handleChange('priority')}
-              required
-              disabled={saving}
+              disabled={true}
             >
               <option value="LOW">Low - Non-urgent issue</option>
               <option value="MEDIUM">Medium - Standard priority</option>
@@ -185,7 +177,7 @@ export default function EditTicketPage() {
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" loading={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Update Status'}
             </Button>
             <Button 
               type="button" 

@@ -78,20 +78,20 @@ export default function TicketsPage() {
 
   const handleClaimTicket = async (ticketId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}`, {
-        method: 'PUT',
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/assign`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('session')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          assignedAgentId: userProfile.id
+          agentId: userProfile.id
         })
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error);
+        throw new Error(data.message || 'Failed to claim ticket');
       }
 
       // Refresh tickets after claiming

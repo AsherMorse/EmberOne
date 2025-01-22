@@ -383,11 +383,7 @@ All errors in the API follow a consistent format:
 ```json
 {
   "message": "Human-readable error message",
-  "code": 400,
-  "errors": [
-    "Detailed error 1",
-    "Detailed error 2"
-  ]
+  "code": 400
 }
 ```
 
@@ -396,10 +392,9 @@ All errors in the API follow a consistent format:
 - `200 OK`: Request succeeded
 - `201 Created`: Resource was successfully created
 - `400 Bad Request`: Invalid input or validation failed
-- `401 Unauthorized`: Missing or invalid authentication token
+- `401 Unauthorized`: Invalid email or password, or missing/invalid authentication token
 - `403 Forbidden`: Valid token but insufficient permissions
 - `404 Not Found`: Resource not found
-- `409 Conflict`: Resource conflict (e.g., email already registered)
 - `500 Internal Server Error`: Server-side error
 
 ### Validation Errors
@@ -426,60 +421,42 @@ All errors in the API follow a consistent format:
   - "Title cannot be empty"
   - "Description cannot be empty"
   - "Invalid priority. Must be LOW, MEDIUM, HIGH, or CRITICAL"
-  - "Customers cannot update ticket status"
+  - "Customers cannot update status"
 - Update validation (Agent):
   - "Status is required"
   - "Invalid status. Must be OPEN, IN_PROGRESS, WAITING, or CLOSED"
-  - "Agents can only update status"
+  - "Agents can only update status. Cannot update: title, description, priority"
 - Assignment validation:
   - "Agent ID is required"
   - "Only agents can assign tickets"
 
 ### Error Examples
 
-1. Invalid Sign Up:
+1. Invalid Sign In:
 ```json
 {
-  "message": "Validation failed",
-  "code": 400,
-  "errors": [
-    "Invalid email format",
-    "Password must be at least 6 characters long"
-  ]
+  "message": "Invalid email or password",
+  "code": 401
 }
 ```
 
-2. Email Already Registered:
+2. Invalid Ticket Update (Customer):
 ```json
 {
-  "message": "Email already registered",
-  "code": 409
+  "message": "Customers cannot update: status",
+  "code": 403
 }
 ```
 
-3. Invalid Ticket Update (Customer):
+3. Invalid Ticket Update (Agent):
 ```json
 {
-  "message": "Validation failed",
-  "code": 400,
-  "errors": [
-    "Customers cannot update ticket status"
-  ]
+  "message": "Agents can only update status. Cannot update: title, description, priority",
+  "code": 403
 }
 ```
 
-4. Invalid Ticket Update (Agent):
-```json
-{
-  "message": "Validation failed",
-  "code": 400,
-  "errors": [
-    "Agents can only update status. Cannot update: title, description"
-  ]
-}
-```
-
-5. Resource Not Found:
+4. Resource Not Found:
 ```json
 {
   "message": "Ticket not found",
@@ -491,12 +468,11 @@ All errors in the API follow a consistent format:
 
 1. Always check the HTTP status code first
 2. The `message` field provides a human-readable summary
-3. The `errors` array contains detailed validation errors when present
-4. For `400` errors, address all validation issues before retrying
-5. For `401` errors, refresh the authentication token
-6. For `403` errors, verify the user has the required role
-7. For `409` errors, resolve the conflict before retrying
-8. For `500` errors, contact support with the error details
+3. For `400` errors, address all validation issues before retrying
+4. For `401` errors, refresh the authentication token
+5. For `403` errors, verify the user has the required role
+6. For `409` errors, resolve the conflict before retrying
+7. For `500` errors, contact support with the error details
 
 ## Rate Limiting
 Information about rate limits and quotas.
