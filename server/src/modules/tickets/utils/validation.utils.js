@@ -4,7 +4,7 @@
  * @returns {boolean} True if priority is valid
  */
 const isValidPriority = (priority) => {
-  const validPriorities = ['HIGH', 'MEDIUM', 'LOW'];
+  const validPriorities = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   return validPriorities.includes(priority?.toUpperCase());
 };
 
@@ -14,7 +14,7 @@ const isValidPriority = (priority) => {
  * @returns {boolean} True if status is valid
  */
 const isValidStatus = (status) => {
-  const validStatuses = ['OPEN', 'IN_PROGRESS', 'CLOSED'];
+  const validStatuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
   return validStatuses.includes(status?.toUpperCase());
 };
 
