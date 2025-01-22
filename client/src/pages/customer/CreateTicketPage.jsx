@@ -34,7 +34,7 @@ export default function CreateTicketPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/tickets', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
