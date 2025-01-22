@@ -25,7 +25,7 @@ app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
       'http://localhost:5173',
-      'https://ember-one.vercel.app'
+      'https://ember-one-client.vercel.app'
     ];
     
     // Allow requests with no origin (like mobile apps or curl requests)

@@ -11,7 +11,7 @@
       "src": "/api/(.*)",
       "methods": ["OPTIONS"],
       "headers": {
-        "Access-Control-Allow-Origin": "https://ember-one.vercel.app",
+        "Access-Control-Allow-Origin": "https://ember-one-client.vercel.app",
         "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Credentials": "true",
@@ -23,7 +23,7 @@
       "src": "/api/(.*)",
       "dest": "src/index.js",
       "headers": {
-        "Access-Control-Allow-Origin": "https://ember-one.vercel.app",
+        "Access-Control-Allow-Origin": "https://ember-one-client.vercel.app",
         "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Credentials": "true"
