@@ -4,9 +4,9 @@ import { profiles } from '../../../db/schema/profiles.js';
 import { eq, and, count } from 'drizzle-orm';
 import { 
   createBaseQuery, 
-  applyAccessFilters, 
   applySorting, 
-  applyPagination 
+  applyPagination,
+  applyAccessFilters 
 } from '../utils/query.utils.js';
 
 /**
@@ -56,21 +56,15 @@ class TicketService {
       })
       .returning();
 
-    return this.getTicket(ticket.id, customerId, 'CUSTOMER');
+    return this.getTicket(ticket.id);
   }
 
   /**
    * Get a single ticket by ID
    */
-  async getTicket(ticketId, profileId, role) {
-    console.log('Getting ticket:', { ticketId, profileId, role });
-    
-    let query = createBaseQuery();
-    query = query.where(eq(tickets.id, ticketId));
-    query = applyAccessFilters(query, profileId, role);
-
+  async getTicket(ticketId) {
+    const query = createBaseQuery().where(eq(tickets.id, ticketId));
     const [ticket] = await query;
-    console.log('Query result:', ticket);
 
     if (!ticket) {
       throw new Error('Ticket not found');
@@ -82,8 +76,7 @@ class TicketService {
   /**
    * Update a ticket
    */
-  async updateTicket(ticketId, updates, profileId, role) {
-
+  async updateTicket(ticketId, updates) {
     const updateData = {
       ...updates,
       updatedAt: new Date()
@@ -102,7 +95,7 @@ class TicketService {
       .where(eq(tickets.id, ticketId))
       .returning();
 
-    return this.getTicket(updatedTicket.id, profileId, role);
+    return this.getTicket(updatedTicket.id);
   }
 
   /**

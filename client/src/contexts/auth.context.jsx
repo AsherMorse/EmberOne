@@ -79,13 +79,24 @@ export function AuthProvider({ children }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign in');
+        const errorMessage = (() => {
+          switch (response.status) {
+            case 401:
+              return 'Invalid email or password';
+            case 400:
+              return data.message || 'Invalid input';
+            default:
+              return data.message || 'An error occurred while signing in';
+          }
+        })();
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
 
-      localStorage.setItem('session', data.session.access_token);
+      localStorage.setItem('session', data.session.accessToken);
       setUser(data.user);
 
-      return data.user.user_metadata?.role?.toLowerCase() || ROLES.CUSTOMER;
+      return data.user.role.toLowerCase() || ROLES.CUSTOMER;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -104,7 +115,7 @@ export function AuthProvider({ children }) {
    */
   const hasRole = (roles) => {
     if (!user) return false;
-    const userRole = user.user_metadata?.role?.toLowerCase();
+    const userRole = user.role?.toLowerCase();
     if (!userRole) return false;
     
     if (Array.isArray(roles)) {
@@ -120,7 +131,7 @@ export function AuthProvider({ children }) {
    */
   const hasPermission = (requiredRole) => {
     if (!user) return false;
-    const userRole = user.user_metadata?.role?.toLowerCase();
+    const userRole = user.role?.toLowerCase();
     if (!userRole) return false;
 
     // Admin has access to everything
@@ -142,7 +153,7 @@ export function AuthProvider({ children }) {
     hasRole,
     hasPermission,
     isAuthenticated: !!user,
-    role: user?.user_metadata?.role?.toLowerCase() || null,
+    role: user?.role?.toLowerCase() || null,
     token: localStorage.getItem('session')
   };
 
