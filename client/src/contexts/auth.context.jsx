@@ -103,6 +103,63 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const register = async (email, password, fullName, role) => {
+    try {
+      setError(null);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          password,
+          fullName,
+          role: role.toUpperCase()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = (() => {
+          switch (response.status) {
+            case 409:
+              return 'Email already registered';
+            case 400:
+              return data.message || 'Invalid input';
+            default:
+              return data.message || 'An error occurred while registering';
+          }
+        })();
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // After registration, we need to sign in
+      const loginResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const loginData = await loginResponse.json();
+
+      if (!loginResponse.ok) {
+        throw new Error('Registration successful but failed to sign in automatically');
+      }
+
+      localStorage.setItem('session', loginData.session.accessToken);
+      setUser(loginData.user);
+
+      return loginData.user.role.toLowerCase() || ROLES.CUSTOMER;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('session');
     setUser(null);
@@ -149,6 +206,7 @@ export function AuthProvider({ children }) {
     loading,
     error,
     login,
+    register,
     logout,
     hasRole,
     hasPermission,
