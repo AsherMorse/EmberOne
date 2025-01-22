@@ -20,11 +20,21 @@ export const requireAuth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     
     // Verify session with Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession(token);
     
-    if (error || !user) {
+    if (sessionError || !session) {
       return res.status(401).json({
         message: 'Invalid or expired session',
+        code: 401
+      });
+    }
+
+    // Get user data
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return res.status(401).json({
+        message: 'User not found',
         code: 401
       });
     }
