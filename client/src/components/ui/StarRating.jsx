@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function StarIcon({ className }) {
+export function StarIcon({ className }) {
   return (
     <svg 
       viewBox="0 0 24 24" 
