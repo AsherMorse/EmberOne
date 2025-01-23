@@ -27,6 +27,8 @@ erDiagram
         timestamp created_at
         timestamp updated_at
         timestamp closed_at "Optional"
+        integer feedback_rating "Optional"
+        text feedback_text "Optional"
     }
 
     comments {

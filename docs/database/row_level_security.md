@@ -52,6 +52,10 @@ EmberOne uses PostgreSQL's Row Level Security (RLS) to enforce access control at
 - `Customers can update their own tickets if not closed`
   - Only if status != 'CLOSED'
   - Only the ticket creator can modify
+- `Customers can provide feedback on closed tickets`
+  - Only if status = 'CLOSED'
+  - Can only update feedback_rating and feedback_text
+  - Only the ticket creator can provide feedback
 - `Agents can update assigned tickets`
   - Agents can modify tickets assigned to them
   - Limited to tickets where they are the assigned agent

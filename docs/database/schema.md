@@ -38,6 +38,8 @@ EmberOne uses PostgreSQL with Drizzle ORM for type-safe database operations. The
 - `created_at` (Timestamp): When the ticket was created
 - `updated_at` (Timestamp): When the ticket was last updated
 - `closed_at` (Timestamp, Optional): When the ticket was closed
+- `feedback_rating` (Integer, Optional): Customer satisfaction rating (1-5)
+- `feedback_text` (Text, Optional): Customer's textual feedback
 
 **Indexes**:
 - Primary Key on `id`
