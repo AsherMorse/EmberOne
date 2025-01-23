@@ -1,5 +1,5 @@
 import { CustomerLayout } from '../../components/layout';
-import { Button, Select } from '../../components/ui';
+import { Button, Select, Input } from '../../components/ui';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth.context';
@@ -17,10 +17,11 @@ export default function TicketsPage() {
   });
 
   const [filters, setFilters] = useState({
-    status: 'all',
-    priority: 'all',
-    sort: 'createdAt',
-    order: 'desc'
+    status: '',
+    priority: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    search: ''
   });
 
   const fetchTickets = useCallback(async () => {
@@ -37,8 +38,17 @@ export default function TicketsPage() {
       // Build query params
       const params = new URLSearchParams({
         page: pagination.page,
-        limit: 5
+        limit: pagination.limit
       });
+
+      // Add filters to query params
+      if (filters.status) params.append('status', filters.status.toUpperCase());
+      if (filters.priority) params.append('priority', filters.priority.toUpperCase());
+      if (filters.search.trim()) params.append('search', filters.search.trim());
+      if (filters.sortBy) {
+        params.append('sortBy', filters.sortBy);
+        params.append('sortOrder', filters.sortOrder);
+      }
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${params}`, {
         headers: {
@@ -67,7 +77,7 @@ export default function TicketsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, pagination.page]);
+  }, [token, pagination.page, pagination.limit, filters]);
 
   useEffect(() => {
     if (token) {
@@ -78,17 +88,19 @@ export default function TicketsPage() {
   }, [fetchTickets]);
 
   const handleFilterChange = (key) => (event) => {
+    const value = event.target.value;
     setFilters(prev => ({
       ...prev,
-      [key]: event.target.value
+      [key]: value
     }));
-    // Reset to first page when filters change
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage) => {
-    setLoading(true);
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination(prev => ({
+      ...prev,
+      page: newPage
+    }));
   };
 
   return (
@@ -99,45 +111,65 @@ export default function TicketsPage() {
         <Button as={Link} to="/customer/tickets/new">New Ticket</Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <Select 
-          className="w-40"
-          value={filters.status}
-          onChange={handleFilterChange('status')}
-        >
-          <option value="all">All Status</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="waiting">Waiting</option>
-          <option value="closed">Closed</option>
-        </Select>
-        <Select 
-          className="w-40"
-          value={filters.priority}
-          onChange={handleFilterChange('priority')}
-        >
-          <option value="all">All Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-        </Select>
-        <Select 
-          className="w-40"
-          value={filters.sort}
-          onChange={handleFilterChange('sort')}
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="updated">Last Updated</option>
-        </Select>
+      {/* Search and Filters */}
+      <div className="space-y-4 mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search tickets..."
+              value={filters.search}
+              onChange={handleFilterChange('search')}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+          <Select 
+            value={filters.status}
+            onChange={handleFilterChange('status')}
+            className="w-full"
+          >
+            <option value="">All Status</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="WAITING">Waiting</option>
+            <option value="CLOSED">Closed</option>
+          </Select>
+
+          <Select 
+            value={filters.priority}
+            onChange={handleFilterChange('priority')}
+            className="w-full"
+          >
+            <option value="">All Priority</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="CRITICAL">Critical</option>
+          </Select>
+
+          <Select 
+            value={`${filters.sortBy}-${filters.sortOrder}`}
+            onChange={(e) => {
+              const [sortBy, sortOrder] = e.target.value.split('-');
+              setFilters(prev => ({ ...prev, sortBy, sortOrder }));
+            }}
+            className="w-full"
+          >
+            <option value="createdAt-desc">Newest First</option>
+            <option value="createdAt-asc">Oldest First</option>
+            <option value="updatedAt-desc">Recently Updated</option>
+            <option value="priority-desc">Highest Priority</option>
+            <option value="priority-asc">Lowest Priority</option>
+          </Select>
+        </div>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
-          <p className="text-red-600">{error}</p>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
+          <p className="text-destructive">{error}</p>
         </div>
       )}
 
@@ -208,7 +240,7 @@ export default function TicketsPage() {
                   <td className="p-4 text-sm">{ticket.title}</td>
                   <td className="p-4 text-sm">
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted">
-                      {ticket.status.toLowerCase()}
+                      {ticket.status.toLowerCase().replace('_', ' ')}
                     </span>
                   </td>
                   <td className="p-4 text-sm">
