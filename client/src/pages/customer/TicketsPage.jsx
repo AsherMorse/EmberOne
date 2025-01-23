@@ -9,6 +9,8 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [perPageInput, setPerPageInput] = useState('5');
+  const [userInitiatedUpdate, setUserInitiatedUpdate] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
@@ -23,6 +25,25 @@ export default function TicketsPage() {
     sortOrder: 'desc',
     search: ''
   });
+
+  // Add debounce function
+  const updatePaginationLimit = useCallback((value) => {
+    if (loading) return; // Prevent updates while loading
+    if (value > 0 && value <= 100) {
+      setUserInitiatedUpdate(true);
+      setPagination(prev => {
+        if (prev.limit === value) return prev; // Prevent unnecessary updates
+        return {
+          ...prev,
+          limit: value,
+          page: 1
+        };
+      });
+      setPerPageInput(value.toString());
+    } else {
+      setPerPageInput(pagination.limit.toString());
+    }
+  }, [pagination.limit, loading]);
 
   const fetchTickets = useCallback(async () => {
     try {
@@ -69,15 +90,20 @@ export default function TicketsPage() {
         ...prev,
         total: parseInt(data.pagination.total) || 0,
         page: parseInt(data.pagination.page) || 1,
-        limit: parseInt(data.pagination.limit) || 5,
+        limit: !userInitiatedUpdate ? (parseInt(data.pagination.limit) || 5) : prev.limit,
         pages: parseInt(data.pagination.pages) || 1
       }));
+      
+      if (!userInitiatedUpdate) {
+        setPerPageInput((parseInt(data.pagination.limit) || 5).toString());
+      }
+      setUserInitiatedUpdate(false);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [token, pagination.page, pagination.limit, filters]);
+  }, [token, pagination.page, pagination.limit, filters, userInitiatedUpdate]);
 
   useEffect(() => {
     if (token) {
@@ -124,7 +150,7 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
           <Select 
             value={filters.status}
             onChange={handleFilterChange('status')}
@@ -163,6 +189,48 @@ export default function TicketsPage() {
             <option value="priority-desc">Highest Priority</option>
             <option value="priority-asc">Lowest Priority</option>
           </Select>
+
+          <div className="flex items-center h-10 pt-1">
+            <label className="text-sm text-muted-foreground whitespace-nowrap mr-2">Per page:</label>
+            <Input
+              type="number"
+              min="1"
+              max="100"
+              value={perPageInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || (parseInt(value) >= 0 && parseInt(value) <= 100)) {
+                  setPerPageInput(value);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const value = parseInt(perPageInput);
+                  if (!loading) updatePaginationLimit(value);
+                  e.target.blur();
+                }
+              }}
+              onBlur={() => {
+                const value = parseInt(perPageInput);
+                if (!value || value < 1 || value > 100) {
+                  setPerPageInput(pagination.limit.toString());
+                }
+              }}
+              onWheel={(e) => {
+                e.preventDefault();
+                e.target.blur();
+              }}
+              className="h-8 w-24 px-2 py-0 text-center"
+              step="1"
+              onInput={(e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value) && !loading) {
+                  updatePaginationLimit(value);
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
 

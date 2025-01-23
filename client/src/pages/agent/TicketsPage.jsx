@@ -288,11 +288,17 @@ export default function TicketsPage() {
                   </td>
                   <td className="p-4 text-sm">
                     {ticket.assignedAgentId ? (
-                      <span className="text-blue-500">
-                        {ticket.assignedAgentId === userProfile?.id ? 'Assigned to you' : 'Assigned'}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        ticket.assignedAgentId === userProfile?.id 
+                          ? 'bg-green-500/20 text-green-600'
+                          : 'bg-orange-500/20 text-orange-600'
+                      }`}>
+                        {ticket.assignedAgentId === userProfile?.id ? 'Assigned to you' : 'Assigned to another agent'}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Unassigned</span>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-600">
+                        Unassigned
+                      </span>
                     )}
                   </td>
                   <td className="p-4 text-sm">

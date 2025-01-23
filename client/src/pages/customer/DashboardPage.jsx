@@ -23,34 +23,55 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // Fetch all statuses in parallel
-        const statuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
-        const responses = await Promise.all(
-          statuses.map(status =>
-            fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=${status}&limit=1`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-          )
-        );
+        // Fetch open tickets count
+        const openResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=OPEN&limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // Fetch in progress tickets count
+        const inProgressResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=IN_PROGRESS&limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // Fetch waiting tickets count
+        const waitingResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=WAITING&limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        // Fetch closed tickets count
+        const closedResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=CLOSED&limit=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
         // Check if any request failed
-        const failedResponse = responses.find(r => !r.ok);
-        if (failedResponse) {
+        if (!openResponse.ok || !inProgressResponse.ok || !waitingResponse.ok || !closedResponse.ok) {
           throw new Error('Failed to fetch tickets');
         }
 
-        // Parse all responses
-        const results = await Promise.all(responses.map(r => r.json()));
+        // Parse responses
+        const openData = await openResponse.json();
+        const inProgressData = await inProgressResponse.json();
+        const waitingData = await waitingResponse.json();
+        const closedData = await closedResponse.json();
         
         // Set stats from pagination totals
         setStats({
-          open: results[0].pagination.totalItems || 0,
-          in_progress: results[1].pagination.totalItems || 0,
-          waiting: results[2].pagination.totalItems || 0,
-          closed: results[3].pagination.totalItems || 0
+          open: openData.pagination.total || 0,
+          in_progress: inProgressData.pagination.total || 0,
+          waiting: waitingData.pagination.total || 0,
+          closed: closedData.pagination.total || 0
         });
       } catch (err) {
         setError(err.message);

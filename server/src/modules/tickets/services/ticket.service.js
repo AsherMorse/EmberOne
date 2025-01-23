@@ -6,8 +6,7 @@ import {
   createBaseQuery, 
   applySorting, 
   applyPagination,
-  applyAccessFilters,
-  applyFilters
+  applyAllFilters
 } from '../utils/query.utils.js';
 
 /**
@@ -21,15 +20,8 @@ class TicketService {
     // Build query with filters
     let query = createBaseQuery();
     
-    // Apply role-based access filters first
-    query = applyAccessFilters(query, profileId, role, { onlyAssigned: options.onlyAssigned });
-    
-    // Apply search and status/priority filters
-    query = applyFilters(query, {
-      status: options.status,
-      priority: options.priority,
-      search: options.search
-    });
+    // Apply all filters including role-based access and search/status/priority
+    query = applyAllFilters(query, profileId, role, options);
     
     // Apply sorting
     query = applySorting(query, {
@@ -39,12 +31,7 @@ class TicketService {
 
     // Get total count with filters (but before pagination)
     let totalQuery = db.select({ count: count(tickets.id) }).from(tickets);
-    totalQuery = applyAccessFilters(totalQuery, profileId, role, { onlyAssigned: options.onlyAssigned });
-    totalQuery = applyFilters(totalQuery, {
-      status: options.status,
-      priority: options.priority,
-      search: options.search
-    });
+    totalQuery = applyAllFilters(totalQuery, profileId, role, options);
     const [{ count: total }] = await totalQuery;
 
     // Get paginated results
@@ -150,7 +137,7 @@ class TicketService {
       .from(tickets)
       .where(eq(tickets.id, ticketId));
 
-    const filteredQuery = applyAccessFilters(query, userId, role);
+    const filteredQuery = applyAllFilters(query, userId, role);
     const [ticket] = await filteredQuery;
 
     return Boolean(ticket);

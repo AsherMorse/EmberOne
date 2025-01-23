@@ -35,40 +35,30 @@ export const createBaseQuery = () => {
 };
 
 /**
- * Apply access filters based on user role
+ * Apply all filters to a query including access filters and search/status/priority filters
  */
-export const applyAccessFilters = (query, profileId, role, options = {}) => {
-  // Customers can only see their own tickets
-  if (role === 'CUSTOMER') {
-    return query.where(eq(tickets.customerId, profileId));
-  } 
+export const applyAllFilters = (query, profileId, role, options = {}) => {
+  const conditions = [];
+  const { status, priority, search, onlyAssigned } = options;
 
-  // Agents can see all tickets or only their assigned ones
-  if (role === 'AGENT') {
-    return options.onlyAssigned 
-      ? query.where(eq(tickets.assignedAgentId, profileId))
-      : query;
+  // Apply role-based access filters
+  if (role === 'CUSTOMER') {
+    conditions.push(eq(tickets.customerId, profileId));
+  } else if (role === 'AGENT' && onlyAssigned) {
+    conditions.push(eq(tickets.assignedAgentId, profileId));
   }
 
-  // Admins can see all tickets
-  return query;
-};
-
-/**
- * Apply filters to a query
- */
-export const applyFilters = (query, filters = {}) => {
-  const conditions = [];
-  const { status, priority, search } = filters;
-
+  // Apply status filter
   if (status) {
     conditions.push(eq(tickets.status, status.toUpperCase()));
   }
 
+  // Apply priority filter
   if (priority) {
     conditions.push(eq(tickets.priority, priority.toUpperCase()));
   }
 
+  // Apply search filter
   if (search) {
     conditions.push(
       or(
@@ -78,6 +68,7 @@ export const applyFilters = (query, filters = {}) => {
     );
   }
 
+  // Apply all conditions together
   if (conditions.length > 0) {
     return query.where(and(...conditions));
   }
