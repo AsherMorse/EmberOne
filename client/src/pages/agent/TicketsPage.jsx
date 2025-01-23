@@ -384,7 +384,7 @@ export default function TicketsPage() {
                         </Button>
                       )}
                       {ticket.feedbackRating && (
-                        <Link to={`/agent/tickets/${ticket.id}?tab=feedback`}>
+                        <Link to={`/agent/tickets/${ticket.id}/feedback`}>
                           <Button variant="secondary" size="sm">
                             View Feedback
                           </Button>

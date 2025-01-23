@@ -13,6 +13,7 @@ import CustomerFeedbackPage from './pages/customer/FeedbackPage';
 import AgentDashboardPage from './pages/agent/DashboardPage';
 import AgentTicketsPage from './pages/agent/TicketsPage';
 import AgentEditTicketPage from './pages/agent/EditTicketPage';
+import ViewFeedbackPage from './pages/agent/ViewFeedbackPage';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -70,6 +71,12 @@ const router = createBrowserRouter(
       <Route path="/agent/tickets/:id" element={
         <ProtectedRoute 
           component={AgentEditTicketPage}
+          requiredRole={ROLES.AGENT}
+        />
+      } />
+      <Route path="/agent/tickets/:id/feedback" element={
+        <ProtectedRoute 
+          component={ViewFeedbackPage}
           requiredRole={ROLES.AGENT}
         />
       } />
