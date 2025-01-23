@@ -9,6 +9,7 @@ import CustomerDashboardPage from './pages/customer/DashboardPage';
 import CustomerTicketsPage from './pages/customer/TicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
 import CustomerEditTicketPage from './pages/customer/EditTicketPage';
+import CustomerFeedbackPage from './pages/customer/FeedbackPage';
 import AgentDashboardPage from './pages/agent/DashboardPage';
 import AgentTicketsPage from './pages/agent/TicketsPage';
 import AgentEditTicketPage from './pages/agent/EditTicketPage';
@@ -43,6 +44,12 @@ const router = createBrowserRouter(
       <Route path="/customer/tickets/:id" element={
         <ProtectedRoute 
           component={CustomerEditTicketPage}
+          requiredRole={ROLES.CUSTOMER}
+        />
+      } />
+      <Route path="/customer/tickets/:id/feedback" element={
+        <ProtectedRoute 
+          component={CustomerFeedbackPage}
           requiredRole={ROLES.CUSTOMER}
         />
       } />
