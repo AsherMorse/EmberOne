@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, index, integer } from 'drizzle-orm/pg-core';
 import { ticketStatusEnum, priorityEnum } from './enums.js';
 import { profiles } from './profiles.js';
 
@@ -14,7 +14,9 @@ export const tickets = pgTable(
     assignedAgentId: uuid('assigned_agent_id').references(() => profiles.id),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
-    closedAt: timestamp('closed_at')
+    closedAt: timestamp('closed_at'),
+    feedbackRating: integer('feedback_rating'),
+    feedbackText: text('feedback_text')
   },
   (table) => ({
     customerIdIdx: index('ticket_customer_id_idx').on(table.customerId),
