@@ -40,15 +40,17 @@ export const requireTicketAccess = async (req, res, next) => {
   const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
 
   try {
-    const hasAccess = await ticketService.hasAccess(ticketId, req.profileId, role);
+    const ticket = await ticketService.getTicket(ticketId, req.profileId, role);
     
-    if (!hasAccess) {
+    if (!ticket) {
       return res.status(404).json({
         message: 'Ticket not found',
         code: 404
       });
     }
 
+    // Attach the ticket to the request for use in later middleware
+    req.ticket = ticket;
     next();
   } catch (error) {
     console.error('Ticket access error:', error);

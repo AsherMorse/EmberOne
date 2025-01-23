@@ -79,6 +79,11 @@ export const validateTicketUpdate = (req, res, next) => {
   if (role === 'CUSTOMER') {
     const { title, description, priority, feedbackRating, feedbackText } = req.body;
     
+    // Check if trying to add feedback to a non-closed ticket
+    if ((feedbackRating !== undefined || feedbackText !== undefined) && req.ticket?.status !== 'CLOSED') {
+      errors.push('Feedback can only be provided for closed tickets');
+    }
+    
     if (title !== undefined && !title.trim()) {
       errors.push('Title cannot be empty');
     }
