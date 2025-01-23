@@ -1,5 +1,3 @@
-import { isValidUUID } from '../../../utils/validation.js';
-
 /**
  * Validate comment type
  * @param {string} type - Comment type to validate
@@ -29,8 +27,6 @@ export function validateCommentCreation(req, res, next) {
   // Validate ticketId
   if (!ticketId) {
     errors.push('Ticket ID is required');
-  } else if (!isValidUUID(ticketId)) {
-    errors.push('Invalid ticket ID format');
   }
 
   // Validate content

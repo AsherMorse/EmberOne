@@ -1,7 +1,7 @@
 import { db } from '../../../db/index.js';
 import { comments } from '../../../db/schema/comments.js';
 import { eq } from 'drizzle-orm';
-import { createBaseCommentQuery } from '../utils/query.utils.js';
+import { createBaseCommentQuery, addCommentFilters } from '../utils/query.utils.js';
 
 /**
  * Service class for handling comment-related operations
@@ -17,8 +17,19 @@ class CommentService {
    * @returns {Promise<Object>} Created comment
    */
   async createComment(ticketId, authorId, commentData) {
-    // TODO: Implement comment creation
-    throw new Error('Not implemented');
+    const [comment] = await db
+      .insert(comments)
+      .values({
+        ticketId,
+        authorId,
+        content: commentData.content,
+        isInternal: commentData.isInternal || false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+
+    return this.getComment(comment.id);
   }
 
   /**
@@ -29,8 +40,15 @@ class CommentService {
    * @returns {Promise<Array>} List of comments
    */
   async getTicketComments(ticketId, options = {}) {
-    // TODO: Implement comment retrieval
-    throw new Error('Not implemented');
+    let query = createBaseCommentQuery();
+    
+    // Apply filters
+    query = addCommentFilters(query, {
+      ticketId,
+      includeInternal: options.includeInternal
+    });
+
+    return query;
   }
 
   /**
@@ -41,8 +59,20 @@ class CommentService {
    * @returns {Promise<Object>} Updated comment
    */
   async updateComment(commentId, updates) {
-    // TODO: Implement comment update
-    throw new Error('Not implemented');
+    const [comment] = await db
+      .update(comments)
+      .set({
+        content: updates.content,
+        updatedAt: new Date()
+      })
+      .where(eq(comments.id, commentId))
+      .returning();
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    return this.getComment(comment.id);
   }
 
   /**
@@ -51,8 +81,14 @@ class CommentService {
    * @returns {Promise<void>}
    */
   async deleteComment(commentId) {
-    // TODO: Implement comment deletion
-    throw new Error('Not implemented');
+    const [comment] = await db
+      .delete(comments)
+      .where(eq(comments.id, commentId))
+      .returning();
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
   }
 
   /**
@@ -61,8 +97,14 @@ class CommentService {
    * @returns {Promise<Object>} Comment object
    */
   async getComment(commentId) {
-    // TODO: Implement single comment retrieval
-    throw new Error('Not implemented');
+    const query = createBaseCommentQuery().where(eq(comments.id, commentId));
+    const [comment] = await query;
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    return comment;
   }
 }
 

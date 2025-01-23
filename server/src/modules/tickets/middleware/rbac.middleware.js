@@ -36,12 +36,21 @@ export const requireAgent = (req, res, next) => {
  * Ensure user has access to the ticket
  */
 export const requireTicketAccess = async (req, res, next) => {
-  const ticketId = req.params.id;
+  const ticketId = req.params.id || req.params.ticketId;
   const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
 
   try {
-    const ticket = await ticketService.getTicket(ticketId, req.profileId, role);
+    const hasAccess = await ticketService.hasAccess(ticketId, req.profileId, role);
     
+    if (!hasAccess) {
+      return res.status(403).json({
+        message: 'Access denied',
+        code: 403
+      });
+    }
+
+    // Get the ticket for use in later middleware
+    const ticket = await ticketService.getTicket(ticketId);
     if (!ticket) {
       return res.status(404).json({
         message: 'Ticket not found',

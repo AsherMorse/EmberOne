@@ -173,14 +173,24 @@ class TicketService {
    * Check if a user has access to a ticket
    */
   async hasAccess(ticketId, userId, role) {
+    // Apply role-based access conditions
+    if (role === 'AGENT') {
+      // Agents can access all tickets
+      return true;
+    }
+
+    // For customers, check if they own the ticket
+    const conditions = [eq(tickets.id, ticketId)];
+    if (role === 'CUSTOMER') {
+      conditions.push(eq(tickets.customerId, userId));
+    }
+
     const query = db
       .select({ id: tickets.id })
       .from(tickets)
-      .where(eq(tickets.id, ticketId));
+      .where(and(...conditions));
 
-    const filteredQuery = applyAllFilters(query, userId, role);
-    const [ticket] = await filteredQuery;
-
+    const [ticket] = await query;
     return Boolean(ticket);
   }
 }

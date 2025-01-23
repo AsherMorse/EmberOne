@@ -36,11 +36,11 @@ class CommentController {
    */
   async getComments(req, res) {
     try {
-      const { role } = req.user;
+      const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
       const comments = await commentService.getTicketComments(
         req.params.ticketId,
         {
-          includeInternal: ['AGENT', 'ADMIN'].includes(role)
+          includeInternal: role === 'AGENT' || role === 'ADMIN'
         }
       );
       

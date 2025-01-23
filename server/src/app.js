@@ -14,6 +14,7 @@ import cors from 'cors';
 import { securityMiddleware } from './config/security.config.js';
 import authRoutes from './modules/auth/routes.js';
 import ticketRoutes from './modules/tickets/routes.js';
+import commentRoutes from './modules/comments/routes.js';
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use(express.urlencoded({ extended: true }));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/comments', commentRoutes);
 
 /**
  * 404 handler for undefined routes

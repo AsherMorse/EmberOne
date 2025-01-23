@@ -2,13 +2,15 @@ import { Router } from 'express';
 import { commentController } from './controllers/comment.controller.js';
 import { requireAuth } from '../auth/middleware/auth.middleware.js';
 import { resolveProfileId } from '../profiles/middleware/profile.middleware.js';
+import { requireTicketAccess } from '../tickets/middleware/rbac.middleware.js';
 import { 
   validateCommentCreation, 
   validateCommentUpdate 
 } from './utils/validation.utils.js';
 import {
   requireCommentAccess,
-  validateCommentUpdateAccess
+  validateCommentUpdateAccess,
+  validateInternalCommentAccess
 } from './middleware/rbac.middleware.js';
 
 const router = Router();
@@ -25,7 +27,8 @@ router.use(resolveProfileId);
  * @access Private
  */
 router.post('/', 
-  validateCommentCreation, 
+  validateCommentCreation,
+  validateInternalCommentAccess,
   commentController.createComment
 );
 
@@ -35,6 +38,7 @@ router.post('/',
  * @access Private
  */
 router.get('/:ticketId', 
+  requireTicketAccess,
   commentController.getComments
 );
 
@@ -57,6 +61,7 @@ router.patch('/:id',
  */
 router.delete('/:id',
   requireCommentAccess,
+  validateCommentUpdateAccess, // Only author or admin can delete
   commentController.deleteComment
 );
 
