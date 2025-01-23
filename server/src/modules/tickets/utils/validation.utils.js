@@ -132,3 +132,55 @@ export const validateTicketAssignment = (req, res, next) => {
 
   next();
 };
+
+/**
+ * Validate query parameters for listing tickets
+ */
+export const validateListQuery = (req, res, next) => {
+  const errors = [];
+  const { page, limit, sortBy, sortOrder, status, priority, search } = req.query;
+
+  // Validate pagination
+  if (page !== undefined) {
+    const pageNum = parseInt(page);
+    if (isNaN(pageNum) || pageNum < 1) {
+      errors.push('Page must be a positive integer');
+    }
+  }
+
+  if (limit !== undefined) {
+    const limitNum = parseInt(limit);
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      errors.push('Limit must be between 1 and 100');
+    }
+  }
+
+  // Validate sorting
+  const validSortFields = ['createdAt', 'updatedAt', 'status', 'priority', 'title'];
+  if (sortBy && !validSortFields.includes(sortBy)) {
+    errors.push(`Invalid sort field. Must be one of: ${validSortFields.join(', ')}`);
+  }
+
+  if (sortOrder && !['asc', 'desc'].includes(sortOrder.toLowerCase())) {
+    errors.push('Sort order must be either "asc" or "desc"');
+  }
+
+  // Validate filters
+  if (status && !isValidStatus(status)) {
+    errors.push('Invalid status filter');
+  }
+
+  if (priority && !isValidPriority(priority)) {
+    errors.push('Invalid priority filter');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      message: 'Invalid query parameters',
+      code: 400,
+      errors
+    });
+  }
+
+  next();
+};

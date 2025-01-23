@@ -5,7 +5,8 @@ import { resolveProfileId } from '../profiles/middleware/profile.middleware.js';
 import { 
   validateTicketCreation, 
   validateTicketUpdate, 
-  validateTicketAssignment 
+  validateTicketAssignment,
+  validateListQuery
 } from './utils/validation.utils.js';
 import {
   requireCustomer,
@@ -30,8 +31,7 @@ router.use(resolveProfileId);
  * @desc List all tickets (filtered by user role)
  * @access Private
  */
-// TODO: Add validation for query parameters (pagination, filters)
-router.get('/', ticketController.listTickets);
+router.get('/', validateListQuery, ticketController.listTickets);
 
 /**
  * @route POST /api/tickets

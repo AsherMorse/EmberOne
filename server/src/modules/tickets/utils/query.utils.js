@@ -1,7 +1,7 @@
 import { db } from '../../../db/index.js';
 import { tickets } from '../../../db/schema/tickets.js';
 import { profiles } from '../../../db/schema/profiles.js';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, and, or, ilike } from 'drizzle-orm';
 
 /**
  * Common ticket selector with customer info
@@ -55,11 +55,53 @@ export const applyAccessFilters = (query, profileId, role, options = {}) => {
 };
 
 /**
+ * Apply filters to a query
+ */
+export const applyFilters = (query, filters = {}) => {
+  const conditions = [];
+  const { status, priority, search } = filters;
+
+  if (status) {
+    conditions.push(eq(tickets.status, status.toUpperCase()));
+  }
+
+  if (priority) {
+    conditions.push(eq(tickets.priority, priority.toUpperCase()));
+  }
+
+  if (search) {
+    conditions.push(
+      or(
+        ilike(tickets.title, `%${search}%`),
+        ilike(tickets.description, `%${search}%`)
+      )
+    );
+  }
+
+  if (conditions.length > 0) {
+    return query.where(and(...conditions));
+  }
+
+  return query;
+};
+
+/**
  * Apply sorting to a query
  */
 export const applySorting = (query, { sortBy = 'createdAt', sortOrder = 'desc' } = {}) => {
   const orderBy = sortOrder.toLowerCase() === 'asc' ? asc : desc;
-  return query.orderBy(orderBy(tickets[sortBy]));
+  
+  // Handle special cases for sorting
+  switch (sortBy) {
+    case 'title':
+    case 'status':
+    case 'priority':
+    case 'createdAt':
+    case 'updatedAt':
+      return query.orderBy(orderBy(tickets[sortBy]));
+    default:
+      return query.orderBy(orderBy(tickets.createdAt));
+  }
 };
 
 /**

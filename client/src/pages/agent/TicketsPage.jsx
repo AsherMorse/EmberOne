@@ -1,5 +1,5 @@
 import { AgentLayout } from '../../components/layout';
-import { Button, Select } from '../../components/ui';
+import { Button, Select, Input, Checkbox } from '../../components/ui';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth.context';
@@ -13,15 +13,58 @@ export default function TicketsPage() {
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
-    limit: 5
+    limit: 10
   });
 
   const [filters, setFilters] = useState({
-    status: 'all',
-    priority: 'all',
-    sort: 'createdAt',
-    order: 'desc'
+    status: '',
+    priority: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    search: '',
+    onlyAssigned: false
   });
+
+  const fetchTickets = useCallback(async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams({
+        page: pagination.page,
+        limit: pagination.limit
+      });
+
+      // Add filters to query params
+      if (filters.status) queryParams.append('status', filters.status.toUpperCase());
+      if (filters.priority) queryParams.append('priority', filters.priority.toUpperCase());
+      if (filters.search.trim()) queryParams.append('search', filters.search.trim());
+      if (filters.sortBy) {
+        queryParams.append('sortBy', filters.sortBy);
+        queryParams.append('sortOrder', filters.sortOrder);
+      }
+      if (filters.onlyAssigned) queryParams.append('onlyAssigned', 'true');
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('session')}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      
+      setTickets(data.tickets || []);
+      setPagination(prev => ({
+        ...prev,
+        total: parseInt(data.pagination.total) || 0,
+        page: parseInt(data.pagination.page) || 1,
+        pages: parseInt(data.pagination.pages) || 1
+      }));
+    } catch (err) {
+      console.error('Error fetching tickets:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, filters]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,7 +75,7 @@ export default function TicketsPage() {
           }
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) throw new Error(data.message);
         setUserProfile(data.profile);
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -40,52 +83,23 @@ export default function TicketsPage() {
       }
     };
 
-    const fetchTickets = async () => {
-      try {
-        const queryParams = new URLSearchParams({
-          page: pagination.page,
-          limit: 5
-        }).toString();
-
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('session')}`
-          }
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        
-        setTickets(data.tickets || []);
-        setPagination(prev => ({
-          ...prev,
-          total: parseInt(data.pagination.total) || 0,
-          page: parseInt(data.pagination.page) || 1,
-          limit: parseInt(data.pagination.limit) || 5,
-          pages: parseInt(data.pagination.pages) || 1
-        }));
-      } catch (err) {
-        console.error('Error fetching tickets:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
+  }, []);
+
+  useEffect(() => {
     fetchTickets();
-  }, [pagination.page]);
+  }, [fetchTickets]);
 
   const handleFilterChange = (key) => (event) => {
+    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     setFilters(prev => ({
       ...prev,
-      [key]: event.target.value
+      [key]: value
     }));
-    // Reset to first page when filters change
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage) => {
-    setLoading(true); // Set loading before changing page
     setPagination(prev => ({
       ...prev,
       page: newPage
@@ -111,24 +125,7 @@ export default function TicketsPage() {
       }
 
       // Refresh tickets after claiming
-      const queryParams = new URLSearchParams({
-        page: pagination.page,
-        limit: 5
-      }).toString();
-
-      const ticketsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('session')}`
-        }
-      });
-      const data = await ticketsResponse.json();
-      setTickets(data.tickets);
-      setPagination(prev => ({
-        ...prev,
-        total: data.total,
-        page: data.page,
-        limit: data.limit
-      }));
+      fetchTickets();
     } catch (err) {
       console.error('Error claiming ticket:', err);
       setError(err.message);
@@ -144,39 +141,66 @@ export default function TicketsPage() {
         <h1 className="text-2xl font-semibold">Tickets</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <Select 
-          className="w-40"
-          value={filters.status}
-          onChange={handleFilterChange('status')}
-        >
-          <option value="all">All Status</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="waiting">Waiting</option>
-          <option value="closed">Closed</option>
-        </Select>
-        <Select 
-          className="w-40"
-          value={filters.priority}
-          onChange={handleFilterChange('priority')}
-        >
-          <option value="all">All Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-        </Select>
-        <Select 
-          className="w-40"
-          value={filters.sort}
-          onChange={handleFilterChange('sort')}
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="updated">Last Updated</option>
-        </Select>
+      {/* Search and Filters */}
+      <div className="space-y-4 mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search tickets..."
+              value={filters.search}
+              onChange={handleFilterChange('search')}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+          <Select 
+            value={filters.status}
+            onChange={handleFilterChange('status')}
+            className="w-full"
+          >
+            <option value="">All Status</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="WAITING">Waiting</option>
+            <option value="CLOSED">Closed</option>
+          </Select>
+
+          <Select 
+            value={filters.priority}
+            onChange={handleFilterChange('priority')}
+            className="w-full"
+          >
+            <option value="">All Priority</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="CRITICAL">Critical</option>
+          </Select>
+
+          <Select 
+            value={`${filters.sortBy}-${filters.sortOrder}`}
+            onChange={(e) => {
+              const [sortBy, sortOrder] = e.target.value.split('-');
+              setFilters(prev => ({ ...prev, sortBy, sortOrder }));
+            }}
+            className="w-full"
+          >
+            <option value="createdAt-desc">Newest First</option>
+            <option value="createdAt-asc">Oldest First</option>
+            <option value="updatedAt-desc">Recently Updated</option>
+            <option value="priority-desc">Highest Priority</option>
+            <option value="priority-asc">Lowest Priority</option>
+          </Select>
+
+          <Checkbox
+            id="onlyAssigned"
+            label="Only My Tickets"
+            checked={filters.onlyAssigned}
+            onChange={handleFilterChange('onlyAssigned')}
+          />
+        </div>
       </div>
 
       {/* Error State */}
@@ -224,20 +248,8 @@ export default function TicketsPage() {
                   </td>
                   <td className="p-4 text-sm">
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled
-                      >
-                        View
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled
-                      >
-                        Claim
-                      </Button>
+                      <Button variant="outline" size="sm" disabled>View</Button>
+                      <Button variant="secondary" size="sm" disabled>Claim</Button>
                     </div>
                   </td>
                 </tr>
@@ -257,54 +269,36 @@ export default function TicketsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-muted">
-              {tickets.map(ticket => (
+              {tickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-muted/50">
                   <td className="p-4 text-sm">
-                    <Link to={`/agent/tickets/${ticket.id}`} className="text-primary hover:underline">
-                      {ticket.title}
-                    </Link>
+                    <div className="text-primary">{ticket.title}</div>
+                    <div className="text-muted-foreground text-xs mt-1">
+                      {ticket.customer.fullName}
+                    </div>
                   </td>
                   <td className="p-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      ticket.status === 'OPEN' ? 'bg-blue-500/20 text-blue-500' :
-                      ticket.status === 'IN_PROGRESS' ? 'bg-yellow-500/20 text-yellow-500' :
-                      ticket.status === 'WAITING' ? 'bg-purple-500/20 text-purple-500' :
-                      'bg-green-500/20 text-green-500'
-                    }`}>
-                      {ticket.status.toLowerCase().replace('_', ' ')}
-                    </span>
+                    <StatusBadge status={ticket.status} />
                   </td>
                   <td className="p-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      ticket.priority === 'LOW' ? 'bg-gray-500/20 text-gray-500' :
-                      ticket.priority === 'MEDIUM' ? 'bg-blue-500/20 text-blue-500' :
-                      ticket.priority === 'HIGH' ? 'bg-orange-500/20 text-orange-500' :
-                      'bg-red-500/20 text-red-500'
-                    }`}>
-                      {ticket.priority.toLowerCase()}
-                    </span>
+                    <PriorityBadge priority={ticket.priority} />
                   </td>
                   <td className="p-4 text-sm text-muted-foreground">
                     {new Date(ticket.createdAt).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-sm">
-                    {ticket.assignedAgentId === userProfile?.id ? (
-                      <span className="text-green-500 font-medium">Assigned to you</span>
-                    ) : ticket.assignedAgentId ? (
-                      <span className="text-yellow-500">Assigned to another agent</span>
+                    {ticket.assignedAgentId ? (
+                      <span className="text-blue-500">
+                        {ticket.assignedAgentId === userProfile?.id ? 'Assigned to you' : 'Assigned'}
+                      </span>
                     ) : (
-                      <span className="text-blue-500">Unassigned</span>
+                      <span className="text-muted-foreground">Unassigned</span>
                     )}
                   </td>
                   <td className="p-4 text-sm">
                     <div className="flex gap-2">
                       <Link to={`/agent/tickets/${ticket.id}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                        >
-                          View
-                        </Button>
+                        <Button variant="outline" size="sm">View</Button>
                       </Link>
                       {!ticket.assignedAgentId && (
                         <Button
@@ -322,38 +316,68 @@ export default function TicketsPage() {
             </tbody>
           </table>
         ) : (
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">No tickets found.</p>
+          <div className="p-4 text-center text-muted-foreground">
+            No tickets found
           </div>
         )}
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
-        <p className="text-sm text-muted-foreground">
-          {loading ? (
-            'Loading...'
-          ) : (
-            `Showing page ${pagination.page} of ${pagination.pages}`
-          )}
-        </p>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            disabled={loading || pagination.page <= 1}
-            onClick={() => handlePageChange(pagination.page - 1)}
-          >
-            Previous
-          </Button>
-          <Button 
-            variant="outline"
-            disabled={loading || pagination.page >= pagination.pages}
-            onClick={() => handlePageChange(pagination.page + 1)}
-          >
-            Next
-          </Button>
+      {tickets.length > 0 && (
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {tickets.length} of {pagination.total} tickets
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page === 1}
+              onClick={() => handlePageChange(pagination.page - 1)}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page === pagination.pages}
+              onClick={() => handlePageChange(pagination.page + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </AgentLayout>
+  );
+}
+
+function StatusBadge({ status }) {
+  const statusStyles = {
+    OPEN: 'bg-green-500/20 text-green-500',
+    IN_PROGRESS: 'bg-blue-500/20 text-blue-500',
+    WAITING: 'bg-yellow-500/20 text-yellow-500',
+    CLOSED: 'bg-gray-500/20 text-gray-500'
+  };
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[status] || ''}`}>
+      {status.toLowerCase().replace('_', ' ')}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }) {
+  const priorityStyles = {
+    LOW: 'bg-gray-500/20 text-gray-500',
+    MEDIUM: 'bg-blue-500/20 text-blue-500',
+    HIGH: 'bg-yellow-500/20 text-yellow-500',
+    CRITICAL: 'bg-red-500/20 text-red-500'
+  };
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityStyles[priority] || ''}`}>
+      {priority.toLowerCase()}
+    </span>
   );
 } 

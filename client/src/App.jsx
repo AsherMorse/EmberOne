@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } from 'react-router-dom';
 import { ROLES } from './contexts/auth.context';
 import { ProtectedRoute, AuthLoader } from './components/auth';
+import { SessionCheck } from './components/auth/SessionCheck';
 import LandingPage from './pages/shared/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -99,7 +100,9 @@ const router = createBrowserRouter(
 function App() {
   return (
     <AuthLoader>
-      <RouterProvider router={router} />
+      <SessionCheck>
+        <RouterProvider router={router} />
+      </SessionCheck>
     </AuthLoader>
   );
 }

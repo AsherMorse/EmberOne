@@ -18,14 +18,26 @@ class TicketController {
   async listTickets(req, res) {
     try {
       const { role } = getUserInfo(req);
-      const { page, limit, sortBy, sortOrder, onlyAssigned } = req.query;
+      const { 
+        page, 
+        limit, 
+        sortBy, 
+        sortOrder, 
+        onlyAssigned,
+        status,
+        priority,
+        search
+      } = req.query;
 
       const result = await ticketService.listTickets(req.profileId, role, {
         page: parseInt(page),
         limit: parseInt(limit),
         sortBy,
         sortOrder,
-        onlyAssigned: onlyAssigned === 'true'
+        onlyAssigned: onlyAssigned === 'true',
+        status,
+        priority,
+        search
       });
 
       res.json(result);
