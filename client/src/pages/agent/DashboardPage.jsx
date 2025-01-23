@@ -211,6 +211,14 @@ export default function DashboardPage() {
                       >
                         View Details
                       </Button>
+                      <Button
+                        as={Link}
+                        to={`/agent/tickets/${ticket.id}/comments`}
+                        variant="secondary"
+                        className="text-sm ml-2"
+                      >
+                        View Comments
+                      </Button>
                     </td>
                   </tr>
                 ))}

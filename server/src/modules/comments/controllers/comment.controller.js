@@ -10,13 +10,16 @@ class CommentController {
   async createComment(req, res) {
     try {
       const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
+      const isInternal = role === 'AGENT' && (req.body.isInternal || false);
+      const type = isInternal ? 'INTERNAL' : (req.body.type || 'USER');
+
       const comment = await commentService.createComment(
-        req.body.ticketId,
+        req.params.ticketId,
         req.profileId,
         {
           content: req.body.content,
-          isInternal: req.body.isInternal || false,
-          type: req.body.type || (role === 'AGENT' ? 'INTERNAL' : 'USER')
+          isInternal,
+          type
         }
       );
       

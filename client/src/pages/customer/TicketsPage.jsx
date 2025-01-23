@@ -332,6 +332,14 @@ export default function TicketsPage() {
                       >
                         View Details
                       </Button>
+                      <Button
+                        as={Link}
+                        to={`/customer/tickets/${ticket.id}/comments`}
+                        variant="secondary"
+                        className="text-sm"
+                      >
+                        View Comments
+                      </Button>
                       {ticket.status === 'CLOSED' && !ticket.feedbackRating && !ticket.feedbackText && (
                         <Button
                           as={Link}

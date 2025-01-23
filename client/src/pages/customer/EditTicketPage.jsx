@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { CustomerLayout } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { useAuth } from '../../contexts/auth.context';
@@ -174,6 +174,13 @@ export default function EditTicketPage() {
           <div className="flex gap-3 pt-4">
             <Button type="submit" loading={saving}>
               {saving ? 'Saving...' : 'Update Description'}
+            </Button>
+            <Button
+              as={Link}
+              to={`/customer/tickets/${id}/comments`}
+              variant="secondary"
+            >
+              View Comments
             </Button>
             <Button 
               type="button" 

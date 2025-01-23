@@ -10,9 +10,11 @@ import CustomerTicketsPage from './pages/customer/TicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
 import CustomerEditTicketPage from './pages/customer/EditTicketPage';
 import CustomerFeedbackPage from './pages/customer/FeedbackPage';
+import CustomerViewCommentsPage from './pages/customer/ViewCommentsPage';
 import AgentDashboardPage from './pages/agent/DashboardPage';
 import AgentTicketsPage from './pages/agent/TicketsPage';
 import AgentEditTicketPage from './pages/agent/EditTicketPage';
+import AgentViewCommentsPage from './pages/agent/ViewCommentsPage';
 import ViewFeedbackPage from './pages/agent/ViewFeedbackPage';
 
 const router = createBrowserRouter(
@@ -48,6 +50,12 @@ const router = createBrowserRouter(
           requiredRole={ROLES.CUSTOMER}
         />
       } />
+      <Route path="/customer/tickets/:id/comments" element={
+        <ProtectedRoute 
+          component={CustomerViewCommentsPage}
+          requiredRole={ROLES.CUSTOMER}
+        />
+      } />
       <Route path="/customer/tickets/:id/feedback" element={
         <ProtectedRoute 
           component={CustomerFeedbackPage}
@@ -71,6 +79,12 @@ const router = createBrowserRouter(
       <Route path="/agent/tickets/:id" element={
         <ProtectedRoute 
           component={AgentEditTicketPage}
+          requiredRole={ROLES.AGENT}
+        />
+      } />
+      <Route path="/agent/tickets/:id/comments" element={
+        <ProtectedRoute 
+          component={AgentViewCommentsPage}
           requiredRole={ROLES.AGENT}
         />
       } />

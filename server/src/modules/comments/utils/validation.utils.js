@@ -21,13 +21,8 @@ const isValidContent = (content) => {
  * Validate comment creation input
  */
 export function validateCommentCreation(req, res, next) {
-  const { ticketId, content, type, isInternal } = req.body;
+  const { content, type, isInternal } = req.body;
   const errors = [];
-
-  // Validate ticketId
-  if (!ticketId) {
-    errors.push('Ticket ID is required');
-  }
 
   // Validate content
   if (!content) {

@@ -383,6 +383,11 @@ export default function TicketsPage() {
                           Claim
                         </Button>
                       )}
+                      <Link to={`/agent/tickets/${ticket.id}/comments`}>
+                        <Button variant="secondary" size="sm">
+                          View Comments
+                        </Button>
+                      </Link>
                       {ticket.feedbackRating && (
                         <Link to={`/agent/tickets/${ticket.id}/feedback`}>
                           <Button variant="secondary" size="sm">

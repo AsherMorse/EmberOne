@@ -22,11 +22,11 @@ router.use(requireAuth);
 router.use(resolveProfileId);
 
 /**
- * @route POST /api/comments
+ * @route POST /api/tickets/:ticketId/comments
  * @desc Create a new comment
  * @access Private
  */
-router.post('/', 
+router.post('/:ticketId/comments', 
   validateCommentCreation,
   requireTicketAccess,
   validateInternalCommentAccess,
@@ -34,21 +34,21 @@ router.post('/',
 );
 
 /**
- * @route GET /api/comments/:ticketId
+ * @route GET /api/tickets/:ticketId/comments
  * @desc Get comments for a ticket
  * @access Private
  */
-router.get('/:ticketId', 
+router.get('/:ticketId/comments', 
   requireTicketAccess,
   commentController.getComments
 );
 
 /**
- * @route PATCH /api/comments/:id
+ * @route PATCH /api/tickets/:ticketId/comments/:id
  * @desc Update a comment
  * @access Private
  */
-router.patch('/:id', 
+router.patch('/:ticketId/comments/:id', 
   requireCommentAccess,
   validateCommentUpdateAccess,
   validateCommentUpdate, 
@@ -56,13 +56,13 @@ router.patch('/:id',
 );
 
 /**
- * @route DELETE /api/comments/:id
+ * @route DELETE /api/tickets/:ticketId/comments/:id
  * @desc Delete a comment
  * @access Private
  */
-router.delete('/:id',
+router.delete('/:ticketId/comments/:id',
   requireCommentAccess,
-  validateCommentUpdateAccess, // Only author or admin can delete
+  validateCommentUpdateAccess,
   commentController.deleteComment
 );
 
