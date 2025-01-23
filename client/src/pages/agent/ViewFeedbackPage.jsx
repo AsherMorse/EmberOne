@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 export default function ViewFeedbackPage() {
-  const { ticketId } = useParams();
+  const { id } = useParams();
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +13,7 @@ export default function ViewFeedbackPage() {
   useEffect(() => {
     const fetchTicket = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('session')}`
           }
@@ -30,7 +30,7 @@ export default function ViewFeedbackPage() {
     };
 
     fetchTicket();
-  }, [ticketId]);
+  }, [id]);
 
   if (loading) {
     return (
@@ -62,7 +62,7 @@ export default function ViewFeedbackPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold">Ticket Feedback</h1>
-            <Link to={`/agent/tickets/${ticketId}`}>
+            <Link to={`/agent/tickets/${id}`}>
               <Button variant="outline">Back to Ticket</Button>
             </Link>
           </div>
@@ -79,7 +79,7 @@ export default function ViewFeedbackPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Ticket Feedback</h1>
-          <Link to={`/agent/tickets/${ticketId}`}>
+          <Link to={`/agent/tickets/${id}`}>
             <Button variant="outline">Back to Ticket</Button>
           </Link>
         </div>

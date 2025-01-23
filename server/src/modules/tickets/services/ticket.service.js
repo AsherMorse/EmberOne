@@ -118,13 +118,13 @@ class TicketService {
       .where(eq(tickets.id, ticketId))
       .returning();
 
-    // Track feedback changes in history if provided
-    if (updates.feedbackRating !== undefined || updates.feedbackText !== undefined) {
-      await this.addHistory(ticketId, profileId, 'feedback_added', null, {
-        feedbackRating: updates.feedbackRating,
-        feedbackText: updates.feedbackText
-      });
-    }
+    // Remove history tracking for feedback
+    // if (updates.feedbackRating !== undefined || updates.feedbackText !== undefined) {
+    //   await this.addHistory(ticketId, profileId, 'feedback_added', null, {
+    //     feedbackRating: updates.feedbackRating,
+    //     feedbackText: updates.feedbackText
+    //   });
+    // }
 
     return this.getTicket(updatedTicket.id);
   }
