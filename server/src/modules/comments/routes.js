@@ -28,6 +28,7 @@ router.use(resolveProfileId);
  */
 router.post('/', 
   validateCommentCreation,
+  requireTicketAccess,
   validateInternalCommentAccess,
   commentController.createComment
 );

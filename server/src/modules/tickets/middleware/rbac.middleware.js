@@ -36,7 +36,7 @@ export const requireAgent = (req, res, next) => {
  * Ensure user has access to the ticket
  */
 export const requireTicketAccess = async (req, res, next) => {
-  const ticketId = req.params.id || req.params.ticketId;
+  const ticketId = req.params.id || req.params.ticketId || req.body.ticketId;
   const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
 
   try {

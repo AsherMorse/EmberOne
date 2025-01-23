@@ -9,16 +9,18 @@ class CommentController {
    */
   async createComment(req, res) {
     try {
+      const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
       const comment = await commentService.createComment(
         req.body.ticketId,
         req.profileId,
         {
           content: req.body.content,
-          isInternal: req.body.isInternal || false
+          isInternal: req.body.isInternal || false,
+          type: req.body.type || (role === 'AGENT' ? 'INTERNAL' : 'USER')
         }
       );
       
-      res.json({
+      res.status(201).json({
         message: 'Comment created successfully',
         comment
       });
