@@ -190,8 +190,8 @@ export default function TicketsPage() {
             <option value="priority-asc">Lowest Priority</option>
           </Select>
 
-          <div className="flex items-center h-10 pt-1">
-            <label className="text-sm text-muted-foreground whitespace-nowrap mr-2">Per page:</label>
+          <div className="flex items-center h-10">
+            <label className="text-sm text-muted-foreground whitespace-nowrap mr-2 flex items-center h-full">Per page:</label>
             <Input
               type="number"
               min="1"
@@ -221,7 +221,7 @@ export default function TicketsPage() {
                 e.preventDefault();
                 e.target.blur();
               }}
-              className="h-8 w-24 px-2 py-0 text-center"
+              className="h-10 w-24 px-2 py-0 text-center"
               step="1"
               onInput={(e) => {
                 const value = parseInt(e.target.value);
