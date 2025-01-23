@@ -17,6 +17,8 @@ export const ticketSelector = {
   createdAt: tickets.createdAt,
   updatedAt: tickets.updatedAt,
   closedAt: tickets.closedAt,
+  feedbackRating: tickets.feedbackRating,
+  feedbackText: tickets.feedbackText,
   customer: {
     id: profiles.id,
     fullName: profiles.fullName,
