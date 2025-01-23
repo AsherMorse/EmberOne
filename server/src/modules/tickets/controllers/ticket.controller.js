@@ -111,8 +111,13 @@ class TicketController {
       const { role } = getUserInfo(req);
       const ticket = await ticketService.updateTicket(req.params.id, req.body, req.profileId, role);
 
+      // Customize message if feedback was provided
+      const message = req.body.feedbackRating || req.body.feedbackText 
+        ? 'Feedback submitted successfully'
+        : 'Ticket updated successfully';
+
       res.json({
-        message: 'Ticket updated successfully',
+        message,
         ticket
       });
     } catch (error) {
