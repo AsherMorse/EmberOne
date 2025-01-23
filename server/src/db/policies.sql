@@ -6,6 +6,7 @@ DROP POLICY IF EXISTS "Admins can manage roles" ON profiles;
 DROP POLICY IF EXISTS "Customers can view their own tickets" ON tickets;
 DROP POLICY IF EXISTS "Customers can create tickets" ON tickets;
 DROP POLICY IF EXISTS "Customers can update their own tickets if not closed" ON tickets;
+DROP POLICY IF EXISTS "Customers can provide feedback on closed tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can view all tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can update assigned tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can be assigned tickets" ON tickets;
@@ -90,6 +91,31 @@ CREATE POLICY "Customers can update their own tickets if not closed"
       SELECT user_id FROM profiles WHERE id = customer_id
     )
     AND status != 'CLOSED'
+  );
+
+CREATE POLICY "Customers can provide feedback on closed tickets"
+  ON tickets FOR UPDATE
+  USING (
+    auth.uid()::text IN (
+      SELECT user_id FROM profiles WHERE id = customer_id
+    )
+    AND status = 'CLOSED'
+  )
+  WITH CHECK (
+    auth.uid()::text IN (
+      SELECT user_id FROM profiles WHERE id = customer_id
+    )
+    AND status = 'CLOSED'
+    -- Only allow changes to feedback fields
+    AND (
+      (feedback_rating IS NOT NULL OR feedback_text IS NOT NULL)
+      AND
+      title = tickets.title
+      AND description = tickets.description
+      AND status = tickets.status
+      AND priority = tickets.priority
+      AND assigned_agent_id = tickets.assigned_agent_id
+    )
   );
 
 CREATE POLICY "Agents can view all tickets"
@@ -234,6 +260,7 @@ DROP POLICY IF EXISTS "Admins can manage roles" ON profiles;
 DROP POLICY IF EXISTS "Customers can view their own tickets" ON tickets;
 DROP POLICY IF EXISTS "Customers can create tickets" ON tickets;
 DROP POLICY IF EXISTS "Customers can update their own tickets if not closed" ON tickets;
+DROP POLICY IF EXISTS "Customers can provide feedback on closed tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can view all tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can update assigned tickets" ON tickets;
 DROP POLICY IF EXISTS "Agents can be assigned tickets" ON tickets;
