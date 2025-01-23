@@ -19,6 +19,25 @@ const isValidStatus = (status) => {
 };
 
 /**
+ * Validate feedback rating
+ * @param {number} rating - Rating to validate
+ * @returns {boolean} True if rating is valid
+ */
+const isValidFeedbackRating = (rating) => {
+  const numericRating = Number(rating);
+  return !isNaN(numericRating) && Number.isInteger(numericRating) && numericRating >= 1 && numericRating <= 5;
+};
+
+/**
+ * Validate feedback text
+ * @param {string} text - Feedback text to validate
+ * @returns {boolean} True if text is valid
+ */
+const isValidFeedbackText = (text) => {
+  return typeof text === 'string' && text.trim().length > 0;
+};
+
+/**
  * Validate ticket creation input
  */
 export const validateTicketCreation = (req, res, next) => {
@@ -58,7 +77,7 @@ export const validateTicketUpdate = (req, res, next) => {
   const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
 
   if (role === 'CUSTOMER') {
-    const { title, description, priority } = req.body;
+    const { title, description, priority, feedbackRating, feedbackText } = req.body;
     
     if (title !== undefined && !title.trim()) {
       errors.push('Title cannot be empty');
@@ -70,6 +89,17 @@ export const validateTicketUpdate = (req, res, next) => {
     
     if (priority !== undefined && !isValidPriority(priority)) {
       errors.push('Invalid priority. Must be LOW, MEDIUM, HIGH, or CRITICAL');
+    }
+
+    // Validate feedback fields if provided
+    if (feedbackRating !== undefined) {
+      if (!isValidFeedbackRating(feedbackRating)) {
+        errors.push('Feedback rating must be a number between 1 and 5');
+      }
+    }
+
+    if (feedbackText !== undefined && !isValidFeedbackText(feedbackText)) {
+      errors.push('Feedback text must be a non-empty string');
     }
 
     // Prevent customers from updating status

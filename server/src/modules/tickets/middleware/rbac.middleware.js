@@ -66,9 +66,15 @@ export const validateUpdateAccess = (req, res, next) => {
   const role = req.user?.user_metadata?.role?.toUpperCase() || 'CUSTOMER';
   const updates = req.body;
 
-  // Customers can only update title, description, and priority
+  // Customers can only update title, description, priority, and feedback on closed tickets
   if (role === 'CUSTOMER') {
     const allowedFields = ['title', 'description', 'priority'];
+    
+    // Allow feedback fields only if ticket is closed
+    if (req.ticket?.status === 'CLOSED') {
+      allowedFields.push('feedbackRating', 'feedbackText');
+    }
+
     const attemptedFields = Object.keys(updates);
     const invalidFields = attemptedFields.filter(field => !allowedFields.includes(field));
 
