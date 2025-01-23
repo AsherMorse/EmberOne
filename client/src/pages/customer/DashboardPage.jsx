@@ -27,7 +27,7 @@ export default function DashboardPage() {
         const statuses = ['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED'];
         const responses = await Promise.all(
           statuses.map(status =>
-            fetch(`/api/tickets?status=${status}&limit=1`, {
+            fetch(`${import.meta.env.VITE_API_URL}/api/tickets?status=${status}&limit=1`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
