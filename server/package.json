@@ -17,6 +17,7 @@
     "clean": "rm -rf node_modules coverage",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:push:prod": "dotenv -e .env.production -- drizzle-kit push",
     "db:drop": "drizzle-kit drop",
     "db:seed": "node src/db/seed.js"
   },
@@ -38,6 +39,7 @@
     "@typescript-eslint/parser": "^6.19.0",
     "chai": "^4.3.10",
     "chai-http": "^4.4.0",
+    "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "nodemon": "^3.0.2",
