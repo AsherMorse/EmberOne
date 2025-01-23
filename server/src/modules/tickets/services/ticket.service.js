@@ -1,6 +1,7 @@
 import { db } from '../../../db/index.js';
 import { tickets } from '../../../db/schema/tickets.js';
 import { profiles } from '../../../db/schema/profiles.js';
+import { history } from '../../../db/schema/history.js';
 import { eq, and, count } from 'drizzle-orm';
 import { 
   createBaseQuery, 
@@ -86,7 +87,7 @@ class TicketService {
   /**
    * Update a ticket
    */
-  async updateTicket(ticketId, updates) {
+  async updateTicket(ticketId, updates, profileId, role) {
     const updateData = {
       ...updates,
       updatedAt: new Date()
@@ -99,13 +100,53 @@ class TicketService {
       updateData.closedAt = null;
     }
 
+    // Handle feedback updates
+    if (updates.feedbackRating !== undefined || updates.feedbackText !== undefined) {
+      // Verify ticket is closed and user is the customer
+      const ticket = await this.getTicket(ticketId);
+      if (ticket.status !== 'CLOSED') {
+        throw new Error('Feedback can only be provided for closed tickets');
+      }
+      if (role === 'CUSTOMER' && ticket.customerId !== profileId) {
+        throw new Error('Only the ticket owner can provide feedback');
+      }
+    }
+
     const [updatedTicket] = await db
       .update(tickets)
       .set(updateData)
       .where(eq(tickets.id, ticketId))
       .returning();
 
+    // Track feedback changes in history if provided
+    if (updates.feedbackRating !== undefined || updates.feedbackText !== undefined) {
+      await this.addHistory(ticketId, profileId, 'feedback_added', null, {
+        feedbackRating: updates.feedbackRating,
+        feedbackText: updates.feedbackText
+      });
+    }
+
     return this.getTicket(updatedTicket.id);
+  }
+
+  /**
+   * Add a history entry for a ticket
+   */
+  async addHistory(ticketId, actorId, action, oldValue, newValue, metadata = {}) {
+    const [history] = await db
+      .insert(history)
+      .values({
+        ticketId,
+        actorId,
+        action,
+        oldValue,
+        newValue,
+        metadata,
+        createdAt: new Date()
+      })
+      .returning();
+
+    return history;
   }
 
   /**
