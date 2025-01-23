@@ -116,10 +116,27 @@ class TicketController {
         ticket
       });
     } catch (error) {
+      console.error('Update ticket error:', error);
+
       if (error.message === 'Ticket not found') {
         return res.status(404).json({
           message: error.message,
           code: 404
+        });
+      }
+
+      // Handle feedback-specific errors
+      if (error.message === 'Feedback can only be provided for closed tickets') {
+        return res.status(400).json({
+          message: error.message,
+          code: 400
+        });
+      }
+
+      if (error.message === 'Only the ticket owner can provide feedback') {
+        return res.status(403).json({
+          message: error.message,
+          code: 403
         });
       }
 
