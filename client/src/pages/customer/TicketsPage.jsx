@@ -323,14 +323,26 @@ export default function TicketsPage() {
                     {new Date(ticket.updatedAt).toLocaleDateString()}
                   </td>
                   <td className="p-4 text-sm">
-                    <Button
-                      as={Link}
-                      to={`/customer/tickets/${ticket.id}`}
-                      variant="ghost"
-                      className="text-sm"
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        as={Link}
+                        to={`/customer/tickets/${ticket.id}`}
+                        variant="ghost"
+                        className="text-sm"
+                      >
+                        View Details
+                      </Button>
+                      {ticket.status === 'CLOSED' && !ticket.feedbackRating && !ticket.feedbackText && (
+                        <Button
+                          as={Link}
+                          to={`/customer/tickets/${ticket.id}/feedback`}
+                          variant="secondary"
+                          className="text-sm"
+                        >
+                          Give Feedback
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
