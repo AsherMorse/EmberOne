@@ -79,18 +79,54 @@ const validateChanges = (changes) => {
     
     // Ensure we have at least one change
     if (parsed.changes.length === 0) {
-      throw Errors.invalidCommand('No changes specified');
+      throw Errors.insufficientChanges();
     }
 
     // Check for invalid state transitions
     for (const change of parsed.changes) {
+      // Validate state transitions
       if (change.current_state.status === 'CLOSED' && 
           change.updates.status && 
           !['OPEN', 'IN_PROGRESS'].includes(change.updates.status)) {
-        throw Errors.validationError(
-          'status',
-          'Closed tickets can only be reopened to OPEN or IN_PROGRESS status'
-        );
+        throw Errors.invalidStateTransition('CLOSED', change.updates.status);
+      }
+
+      // Ensure at least one field is being updated
+      const updateFields = Object.keys(change.updates);
+      if (updateFields.length === 0) {
+        throw Errors.insufficientChanges();
+      }
+    }
+
+    // Check impact assessment
+    if (parsed.impact_assessment.level === 'high') {
+      throw Errors.highImpactChanges(
+        parsed.impact_assessment.level,
+        parsed.impact_assessment.factors.num_tickets
+      );
+    }
+
+    // Check for consistency in similar tickets
+    const similarTickets = new Map();
+    for (const change of parsed.changes) {
+      const key = `${change.current_state.status}-${change.current_state.priority}`;
+      if (!similarTickets.has(key)) {
+        similarTickets.set(key, []);
+      }
+      similarTickets.get(key).push(change);
+    }
+
+    // Compare updates for similar tickets
+    for (const [key, tickets] of similarTickets.entries()) {
+      if (tickets.length > 1) {
+        const firstUpdate = JSON.stringify(tickets[0].updates);
+        for (const ticket of tickets.slice(1)) {
+          if (JSON.stringify(ticket.updates) !== firstUpdate) {
+            throw Errors.inconsistentChanges(
+              `Similar tickets with state ${key} have inconsistent updates`
+            );
+          }
+        }
       }
     }
 
