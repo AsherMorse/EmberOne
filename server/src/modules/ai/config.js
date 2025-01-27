@@ -4,7 +4,7 @@
  * @module ai/config
  */
 
-import { ChatOpenAI } from 'langchain/chat_models/openai';
+import { ChatOpenAI } from '@langchain/openai';
 import dotenv from 'dotenv';
 
 dotenv.config();

@@ -15,6 +15,7 @@ import { securityMiddleware } from './config/security.config.js';
 import authRoutes from './modules/auth/routes.js';
 import ticketRoutes from './modules/tickets/routes.js';
 import commentRoutes from './modules/comments/routes.js';
+import adminRoutes from './modules/admin/routes.js';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tickets', commentRoutes);
+app.use('/api/admin', adminRoutes);
 
 /**
  * 404 handler for undefined routes

@@ -6,8 +6,8 @@
  */
 
 import { z } from 'zod';
-import { ChatPromptTemplate } from 'langchain/prompts';
-import { RunnableSequence } from 'langchain/runnables';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { RunnableSequence } from '@langchain/core/runnables';
 import { gpt4oMini } from '../config.js';
 import { Errors } from '../utils/errors.js';
 
