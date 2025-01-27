@@ -6,6 +6,7 @@
 
 import { db } from '../../../db/index.js';
 import { commandTimings } from '../../../db/schema/index.js';
+import { avg, desc, sql } from 'drizzle-orm';
 
 // Default durations in milliseconds for each stage
 export const DEFAULT_DURATIONS = {
@@ -18,6 +19,71 @@ export const DEFAULT_DURATIONS = {
 };
 
 /**
+ * Get average durations from recent command executions
+ * @param {number} limit - Number of recent records to consider
+ * @returns {Promise<Object>} Average durations for each stage
+ */
+export async function getAverageDurations(limit = 100) {
+  const result = await db.select({
+    stage_1: avg(commandTimings.stage_1_duration),
+    stage_2: avg(commandTimings.stage_2_duration),
+    stage_3: avg(commandTimings.stage_3_duration),
+    stage_4: avg(commandTimings.stage_4_duration),
+    stage_5: avg(commandTimings.stage_5_duration),
+    stage_6: avg(commandTimings.stage_6_duration),
+  })
+  .from(commandTimings)
+  .orderBy(desc(commandTimings.executed_at))
+  .limit(limit);
+
+  // If no historical data, return defaults
+  if (!result?.[0]?.stage_1) {
+    return DEFAULT_DURATIONS;
+  }
+
+  return {
+    stage_1: Math.round(result[0].stage_1),
+    stage_2: Math.round(result[0].stage_2),
+    stage_3: Math.round(result[0].stage_3),
+    stage_4: Math.round(result[0].stage_4),
+    stage_5: Math.round(result[0].stage_5),
+    stage_6: Math.round(result[0].stage_6)
+  };
+}
+
+/**
+ * Get weighted average durations based on ticket count similarity
+ * @param {number} ticketCount - Number of tickets in current operation
+ * @returns {Promise<Object>} Weighted average durations
+ */
+export async function getWeightedAverageDurations(ticketCount) {
+  const result = await db.select({
+    stage_1: sql`AVG(stage_1_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+    stage_2: sql`AVG(stage_2_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+    stage_3: sql`AVG(stage_3_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+    stage_4: sql`AVG(stage_4_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+    stage_5: sql`AVG(stage_5_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+    stage_6: sql`AVG(stage_6_duration * (1.0 / (ABS(matched_tickets_count - ${ticketCount}) + 1)))`,
+  })
+  .from(commandTimings)
+  .where(sql`executed_at > NOW() - INTERVAL '7 days'`);
+
+  // If no historical data, return defaults
+  if (!result?.[0]?.stage_1) {
+    return DEFAULT_DURATIONS;
+  }
+
+  return {
+    stage_1: Math.round(result[0].stage_1),
+    stage_2: Math.round(result[0].stage_2),
+    stage_3: Math.round(result[0].stage_3),
+    stage_4: Math.round(result[0].stage_4),
+    stage_5: Math.round(result[0].stage_5),
+    stage_6: Math.round(result[0].stage_6)
+  };
+}
+
+/**
  * Tracks timing for a command execution session
  */
 export class CommandTimer {
@@ -26,6 +92,16 @@ export class CommandTimer {
     this.startTime = Date.now();
     this.stages = new Map();
     this.currentStage = null;
+    this.estimatedDurations = DEFAULT_DURATIONS;
+  }
+
+  /**
+   * Initialize with historical averages
+   * @param {number} ticketCount - Expected number of tickets to process
+   */
+  async initializeEstimates(ticketCount) {
+    // Get weighted averages based on similar operations
+    this.estimatedDurations = await getWeightedAverageDurations(ticketCount);
   }
 
   /**
@@ -69,12 +145,12 @@ export class CommandTimer {
       matched_tickets_count,
       num_tickets_affected,
       was_accepted,
-      stage_1_duration: this.stages.get(1) || DEFAULT_DURATIONS.stage_1,
-      stage_2_duration: this.stages.get(2) || DEFAULT_DURATIONS.stage_2,
-      stage_3_duration: this.stages.get(3) || DEFAULT_DURATIONS.stage_3,
-      stage_4_duration: this.stages.get(4) || DEFAULT_DURATIONS.stage_4,
-      stage_5_duration: this.stages.get(5) || DEFAULT_DURATIONS.stage_5,
-      stage_6_duration: this.stages.get(6) || DEFAULT_DURATIONS.stage_6
+      stage_1_duration: this.stages.get(1) || this.estimatedDurations.stage_1,
+      stage_2_duration: this.stages.get(2) || this.estimatedDurations.stage_2,
+      stage_3_duration: this.stages.get(3) || this.estimatedDurations.stage_3,
+      stage_4_duration: this.stages.get(4) || this.estimatedDurations.stage_4,
+      stage_5_duration: this.stages.get(5) || this.estimatedDurations.stage_5,
+      stage_6_duration: this.stages.get(6) || this.estimatedDurations.stage_6
     };
 
     await db.insert(commandTimings).values(timings);
@@ -88,7 +164,7 @@ export class CommandTimer {
     if (!this.currentStage) return null;
 
     const elapsed = Date.now() - this.currentStage.startTime;
-    const estimated = DEFAULT_DURATIONS[`stage_${this.currentStage.number}`];
+    const estimated = this.estimatedDurations[`stage_${this.currentStage.number}`];
     const percentage = Math.min(Math.round((elapsed / estimated) * 100), 99);
 
     return {
