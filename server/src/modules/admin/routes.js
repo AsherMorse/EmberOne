@@ -12,13 +12,25 @@ router.post('/tickets/command', validateAdmin, validateTicketCommand, async (req
         
         // Validate and format the response
         const response = validateCommandResponse({
-            message: 'Command validated successfully',
-            command: validatedCommand
+            message: validatedCommand.validation.reasoning,
+            command: validatedCommand,
+            impact: validatedCommand.validation.impact
         });
         
         res.json(response);
     } catch (error) {
-        // Handle response validation errors separately
+        // Handle AI processing errors
+        if (error.name === 'AIProcessingError') {
+            return res.status(400).json({
+                message: error.message,
+                code: 400,
+                error: error.error,
+                details: error.details,
+                suggestion: error.suggestion
+            });
+        }
+        
+        // Handle response validation errors
         if (error.message.includes('Response must')) {
             console.error('Response validation error:', error);
             res.status(500).json({

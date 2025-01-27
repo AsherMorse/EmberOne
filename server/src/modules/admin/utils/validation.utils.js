@@ -93,8 +93,15 @@ export const validateCommandResponse = (response) => {
     const { command } = response;
 
     // Validate command properties
-    if (!command.type || !command.filters || !command.updates) {
-        throw new Error('Command must include type, filters, and updates');
+    if (!command.type || !command.filters || !command.updates || !command.validation) {
+        throw new Error('Command must include type, filters, updates, and validation');
+    }
+
+    // Validate impact assessment if provided
+    if (response.impact) {
+        if (!response.impact.level || !response.impact.factors || !response.impact.reasoning) {
+            throw new Error('Impact assessment must include level, factors, and reasoning');
+        }
     }
 
     // Return formatted response
@@ -104,7 +111,9 @@ export const validateCommandResponse = (response) => {
         command: {
             type: command.type,
             filters: command.filters,
-            updates: command.updates
-        }
+            updates: command.updates,
+            validation: command.validation
+        },
+        impact: response.impact
     };
 }; 
