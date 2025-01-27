@@ -67,4 +67,44 @@ export const validateTicketCommand = (req, res, next) => {
     }
 
     next();
+};
+
+/**
+ * Validate command response format
+ * @param {Object} response - The response object to validate
+ * @returns {Object} Validated and formatted response
+ * @throws {Error} If response format is invalid
+ */
+export const validateCommandResponse = (response) => {
+    if (!response || typeof response !== 'object') {
+        throw new Error('Response must be an object');
+    }
+
+    // Validate message
+    if (!response.message || typeof response.message !== 'string') {
+        throw new Error('Response must include a message string');
+    }
+
+    // Validate command object
+    if (!response.command || typeof response.command !== 'object') {
+        throw new Error('Response must include a command object');
+    }
+
+    const { command } = response;
+
+    // Validate command properties
+    if (!command.type || !command.filters || !command.updates) {
+        throw new Error('Command must include type, filters, and updates');
+    }
+
+    // Return formatted response
+    return {
+        message: response.message,
+        code: 200,
+        command: {
+            type: command.type,
+            filters: command.filters,
+            updates: command.updates
+        }
+    };
 }; 

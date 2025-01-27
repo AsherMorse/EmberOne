@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateAdmin } from './middleware/adminAuth.js';
 import { processCommand } from './controllers/ticketCommands.js';
-import { validateTicketCommand } from './utils/validation.utils.js';
+import { validateTicketCommand, validateCommandResponse } from './utils/validation.utils.js';
 
 const router = express.Router();
 
@@ -9,15 +9,30 @@ const router = express.Router();
 router.post('/tickets/command', validateAdmin, validateTicketCommand, async (req, res) => {
     try {
         const validatedCommand = await processCommand(req.body);
-        res.json({
+        
+        // Validate and format the response
+        const response = validateCommandResponse({
             message: 'Command validated successfully',
             command: validatedCommand
         });
+        
+        res.json(response);
     } catch (error) {
-        res.status(400).json({ 
-            message: 'Command validation failed',
-            error: error.message 
-        });
+        // Handle response validation errors separately
+        if (error.message.includes('Response must')) {
+            console.error('Response validation error:', error);
+            res.status(500).json({
+                message: 'Internal server error',
+                code: 500,
+                error: 'Failed to format response'
+            });
+        } else {
+            res.status(400).json({ 
+                message: 'Command validation failed',
+                code: 400,
+                error: error.message 
+            });
+        }
     }
 });
 
