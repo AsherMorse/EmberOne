@@ -1,15 +1,22 @@
 import express from 'express';
 import { validateAdmin } from './middleware/adminAuth.js';
+import { processCommand } from './controllers/ticketCommands.js';
 
 const router = express.Router();
 
 // Ticket Command Routes
 router.post('/tickets/command', validateAdmin, async (req, res) => {
     try {
-        // TODO: Implement command validation and processing
-        res.status(501).json({ error: 'Not implemented' });
+        const validatedCommand = await processCommand(req.body);
+        res.json({
+            message: 'Command validated successfully',
+            command: validatedCommand
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(400).json({ 
+            message: 'Command validation failed',
+            error: error.message 
+        });
     }
 });
 
