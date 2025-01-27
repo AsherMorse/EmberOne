@@ -1,11 +1,12 @@
 import express from 'express';
 import { validateAdmin } from './middleware/adminAuth.js';
 import { processCommand } from './controllers/ticketCommands.js';
+import { validateTicketCommand } from './utils/validation.utils.js';
 
 const router = express.Router();
 
 // Ticket Command Routes
-router.post('/tickets/command', validateAdmin, async (req, res) => {
+router.post('/tickets/command', validateAdmin, validateTicketCommand, async (req, res) => {
     try {
         const validatedCommand = await processCommand(req.body);
         res.json({
