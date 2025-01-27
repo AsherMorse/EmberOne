@@ -16,15 +16,28 @@ import { gpt4oMini } from '../config.js';
  */
 const QueryGenerationSchema = z.object({
   query: z.object({
-    ticketIds: z.array(z.string()).describe('Array of ticket IDs to process'),
-    dateRange: z.object({
-      start: z.string().optional().describe('Start date in YYYY-MM-DD format'),
-      end: z.string().optional().describe('End date in YYYY-MM-DD format')
-    }).optional(),
-    action: z.enum(['update', 'close', 'reopen', 'assign']).describe('The action to perform on the tickets'),
-    parameters: z.record(z.any()).describe('Additional parameters for the action')
+    filters: z.object({
+      title_contains: z.string().optional(),
+      description_contains: z.string().optional(),
+      status: z.enum(['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED']).optional(),
+      priority: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).optional(),
+      created_after: z.string().optional().describe('ISO date'),
+      created_before: z.string().optional().describe('ISO date'),
+      updated_after: z.string().optional().describe('ISO date'),
+      updated_before: z.string().optional().describe('ISO date'),
+      closed_after: z.string().optional().describe('ISO date'),
+      closed_before: z.string().optional().describe('ISO date'),
+      assigned_agent_id: z.string().optional(),
+      customer_email_contains: z.string().optional(),
+      customer_name_contains: z.string().optional()
+    }),
+    sort: z.object({
+      field: z.enum(['created_at', 'updated_at', 'priority', 'status']),
+      order: z.enum(['asc', 'desc'])
+    }).optional()
   }),
-  reasoning: z.string().describe('Explanation of how the query was generated')
+  explanation: z.string().describe('AI explains its understanding'),
+  estimated_matches: z.number()
 });
 
 /**
@@ -32,7 +45,12 @@ const QueryGenerationSchema = z.object({
  * Instructs the model to extract structured information from natural language.
  */
 const prompt = ChatPromptTemplate.fromMessages([
-  ['system', 'You are a helpful assistant that converts natural language commands into structured queries for ticket management. Focus on extracting ticket IDs, date ranges, and specific actions to be performed.'],
+  ['system', `You are a helpful AI assistant converting natural language commands into structured ticket queries.
+Current date: "{current_date}"
+The admin wants to: "{command}"
+Convert this into a query that will find the relevant tickets.
+Only return a JSON object matching the QueryResponse type.
+Be precise and literal in your interpretation.`],
   ['human', '{input}']
 ]);
 
