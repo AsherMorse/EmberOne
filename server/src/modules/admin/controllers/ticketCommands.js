@@ -8,6 +8,10 @@ import { queryGenerationChain } from '../../ai/chains/queryGeneration.js';
 import { changeGenerationChain } from '../../ai/chains/changeGeneration.js';
 import { Client } from 'langsmith';
 import { ticketService } from '../../tickets/services/ticket.service.js';
+import { sseService } from '../services/sse.service.js';
+import { v4 as uuid } from 'uuid';
+import { CommandTimer } from '../utils/commandTimer.js';
+import { logger } from '../../../utils/logger.js';
 
 // Initialize LangSmith client
 const client = new Client({
@@ -16,20 +20,50 @@ const client = new Client({
 });
 
 /**
- * Processes the natural language command request
- * @param {Object} command - The command object with text property
- * @returns {Object} The processed query with explanation and matching tickets
- * @throws {AIProcessingError} If validation fails
+ * Process a ticket command and emit progress events
+ * @param {Object} commandData Command data from request
+ * @returns {Promise<Object>} Command result
  */
-export const processCommand = async (command) => {
+export async function processCommand(commandData) {
+    const commandId = uuid();
+    const timer = new CommandTimer(commandId, commandData.text);
+
     try {
-        if (!command.text) {
+        // Start command processing
+        logger.info(`Starting command processing: ${commandId}`);
+        const result = await processCommandStages(commandData, timer);
+        
+        // Mark command as complete
+        timer.complete(result);
+        return result;
+    } catch (error) {
+        // Handle command failure
+        logger.error(`Command processing failed: ${commandId}`, error);
+        timer.fail(error);
+        throw error;
+    }
+}
+
+/**
+ * Process command through various stages
+ * @private
+ */
+async function processCommandStages(commandData, timer) {
+    try {
+        // Validate command text
+        if (!commandData.text) {
             throw Errors.invalidCommand('Command text is required');
         }
 
-        // Generate query from command
+        // Stage 1: Understanding command
+        timer.startStage(1);
+        logger.debug(`Stage 1: Understanding command ${timer.commandId}`);
+
+        // Stage 2: Converting to query
+        timer.startStage(2);
+        logger.debug(`Stage 2: Converting to query ${timer.commandId}`);
         const queryResult = await queryGenerationChain.invoke({
-            command: command.text,
+            command: commandData.text,
             current_date: new Date().toISOString()
         }, {
             callbacks: [{
@@ -37,7 +71,7 @@ export const processCommand = async (command) => {
                     await client.createRun({
                         name: "Query Generation",
                         run_type: "chain",
-                        inputs: { command: command.text },
+                        inputs: { command: commandData.text },
                         outputs: outputs,
                         tags: ["ticket_command", "query_generation"]
                     });
@@ -49,12 +83,9 @@ export const processCommand = async (command) => {
             throw Errors.invalidCommand('Failed to generate query from command');
         }
 
-        // Build search string from title and description filters
-        const searchTerms = [];
-        if (queryResult.query.filters.title_contains) searchTerms.push(queryResult.query.filters.title_contains);
-        if (queryResult.query.filters.description_contains) searchTerms.push(queryResult.query.filters.description_contains);
-
-        // Fetch matching tickets using the generated query
+        // Stage 3: Finding tickets
+        timer.startStage(3);
+        logger.debug(`Stage 3: Finding tickets ${timer.commandId}`);
         const tickets = await ticketService.listTickets(null, 'ADMIN', {
             status: queryResult.query.filters.status,
             priority: queryResult.query.filters.priority,
@@ -72,8 +103,12 @@ export const processCommand = async (command) => {
             sortOrder: queryResult.query.sort?.order
         });
 
+        // Update ticket count for timing estimates
+        await timer.initializeEstimates(tickets.tickets?.length || 0);
+
         // Check if we found any tickets
         if (!tickets.tickets || tickets.tickets.length === 0) {
+            timer.startStage(6); // Skip to final stage
             return {
                 query: queryResult.query,
                 explanation: 'No tickets found matching the criteria',
@@ -94,9 +129,15 @@ export const processCommand = async (command) => {
             };
         }
 
-        // Generate changes using the changeGenerationChain
+        // Stage 4: Analyzing tickets
+        timer.startStage(4);
+        logger.debug(`Stage 4: Analyzing tickets ${timer.commandId}`);
+
+        // Stage 5: Preparing changes
+        timer.startStage(5);
+        logger.debug(`Stage 5: Preparing changes ${timer.commandId}`);
         const changeResult = await changeGenerationChain.invoke({
-            command: command.text,
+            command: commandData.text,
             tickets: JSON.stringify(tickets.tickets)
         }, {
             callbacks: [{
@@ -105,7 +146,7 @@ export const processCommand = async (command) => {
                         name: "Change Generation",
                         run_type: "chain",
                         inputs: { 
-                            command: command.text,
+                            command: commandData.text,
                             tickets: tickets.tickets 
                         },
                         outputs: outputs,
@@ -115,7 +156,9 @@ export const processCommand = async (command) => {
             }]
         });
 
-        console.log('Generated Changes:', JSON.stringify(changeResult, null, 2));
+        // Stage 6: Ready for review
+        timer.startStage(6);
+        logger.debug(`Stage 6: Ready for review ${timer.commandId}`);
 
         return {
             ...queryResult,
@@ -129,7 +172,7 @@ export const processCommand = async (command) => {
         }
         throw Errors.invalidCommand(error.message || 'Failed to process command');
     }
-};
+}
 
 /**
  * Determines command type from query result

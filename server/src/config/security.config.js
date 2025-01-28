@@ -10,8 +10,13 @@ const limiter = rateLimit({
 
 // Security middleware configuration
 export const securityMiddleware = [
-    // Basic security headers
-    helmet(),
+    // Basic security headers with development-friendly config
+    helmet({
+        contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : undefined,
+        crossOriginEmbedderPolicy: process.env.NODE_ENV === 'development' ? false : undefined,
+        crossOriginResourcePolicy: process.env.NODE_ENV === 'development' ? false : undefined,
+        crossOriginOpenerPolicy: process.env.NODE_ENV === 'development' ? false : undefined,
+    }),
     
     // Rate limiting
     limiter

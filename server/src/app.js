@@ -16,17 +16,40 @@ import authRoutes from './modules/auth/routes.js';
 import ticketRoutes from './modules/tickets/routes.js';
 import commentRoutes from './modules/comments/routes.js';
 import adminRoutes from './modules/admin/routes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
 // Security middleware (helmet, rate limiting, etc.)
 app.use(securityMiddleware);
 
+// Special middleware for development and test pages
+app.use((req, res, next) => {
+  // Disable SSL requirement for local development
+  if (process.env.NODE_ENV === 'development') {
+    res.setHeader('Strict-Transport-Security', 'max-age=0');
+  }
+  
+  // Allow test page to load resources over HTTP
+  if (req.path.includes('/test-sse.html') || req.path.includes('/js/test-sse.js')) {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self' http: https:; script-src 'self' 'unsafe-inline' http: https:; style-src 'self' 'unsafe-inline';"
+    );
+  }
+  next();
+});
+
 // CORS configuration with credentials support
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
       'http://localhost:5173',
+      'http://localhost:3000',  // Add localhost:3000 for test page
       'https://ember-one-client.vercel.app'
     ];
     
@@ -49,6 +72,9 @@ app.use(cors({
 // Request parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API routes
 app.use('/api/auth', authRoutes);

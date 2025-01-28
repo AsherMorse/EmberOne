@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stage {
+            margin: 5px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .stage.active {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding-left: 15px;
+        }
+        .stage.complete {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding-left: 15px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2196f3, #1976d2);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .event-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        button:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+        }
+        .connection-status {
+            padding: 8px 15px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .connection-status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        .connection-status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SSE Command Progress Test</h1>
+        <div class="controls">
+            <div id="connection-status" class="connection-status disconnected">
+                Disconnected
+            </div>
+            <button onclick="startTestCommand()" id="test-button">Start Test Command</button>
+        </div>
+    </div>
+
+    <div id="current-command" class="card" style="display: none;">
+        <h3>Current Command Progress</h3>
+        <div class="progress-bar">
+            <div id="overall-progress" class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <div id="stages">
+            <div class="stage" data-stage="1">Stage 1: Understanding command</div>
+            <div class="stage" data-stage="2">Stage 2: Converting to query</div>
+            <div class="stage" data-stage="3">Stage 3: Finding tickets</div>
+            <div class="stage" data-stage="4">Stage 4: Analyzing tickets</div>
+            <div class="stage" data-stage="5">Stage 5: Preparing changes</div>
+            <div class="stage" data-stage="6">Stage 6: Ready for review</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Event Log</h3>
+        <div id="event-log" class="event-log"></div>
+    </div>
+
+    <script>
+        // Force HTTP protocol and handle script loading
+        (function loadScript() {
+            // Force HTTP protocol
+            if (window.location.protocol === 'https:') {
+                window.location.href = 'http://' + window.location.host + window.location.pathname;
+                return;
+            }
+
+            // Fallback function in case script fails to load
+            window.startTestCommand = function() {
+                const status = document.getElementById('connection-status');
+                status.textContent = 'Error: JavaScript not loaded properly';
+                status.className = 'connection-status disconnected';
+                console.error('test-sse.js failed to load. Please ensure you are using http:// instead of https://');
+            };
+
+            // Load the script
+            const script = document.createElement('script');
+            script.src = '/js/test-sse.js'; // Use relative path
+            script.onerror = function() {
+                document.getElementById('connection-status').textContent = 'Error: Failed to load JavaScript';
+                document.getElementById('connection-status').className = 'connection-status disconnected';
+                console.error('Failed to load test-sse.js - Please use http:// instead of https://');
+            };
+            document.body.appendChild(script);
+        })();
+    </script>
+</body>
+</html> 
