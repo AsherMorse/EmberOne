@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../../components/ui/button';
 import Select from '../../components/ui/select';
 
@@ -35,6 +35,16 @@ const EXAMPLE_TICKETS = [
   }
 ];
 
+function formatId(id) {
+  if (!id) return '';
+  // If it's a UUID or long ID, take first segment
+  if (typeof id === 'string' && id.includes('-')) {
+    return id.split('-')[0];
+  }
+  // If it's a number or short ID, return as is
+  return id.toString();
+}
+
 function StatusBadge({ status }) {
   const statusStyles = {
     OPEN: 'bg-green-500/20 text-green-500',
@@ -65,13 +75,18 @@ function PriorityBadge({ priority }) {
   );
 }
 
-function FilterModal({ isOpen, onClose }) {
-  const [filters, setFilters] = useState({
-    status: '',
-    priority: '',
-    sortBy: 'createdAt-desc',
-    assignment: ''
-  });
+function FilterModal({ isOpen, onClose, filters, onApplyFilters }) {
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  // Reset local filters when modal opens
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
+  const handleApply = () => {
+    onApplyFilters(localFilters);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -88,8 +103,8 @@ function FilterModal({ isOpen, onClose }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
                 label="Status"
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                value={localFilters.status}
+                onChange={(e) => setLocalFilters(prev => ({ ...prev, status: e.target.value }))}
               >
                 <option value="">All Status</option>
                 <option value="OPEN">Open</option>
@@ -100,8 +115,8 @@ function FilterModal({ isOpen, onClose }) {
 
               <Select
                 label="Priority"
-                value={filters.priority}
-                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                value={localFilters.priority}
+                onChange={(e) => setLocalFilters(prev => ({ ...prev, priority: e.target.value }))}
               >
                 <option value="">All Priority</option>
                 <option value="LOW">Low</option>
@@ -112,8 +127,15 @@ function FilterModal({ isOpen, onClose }) {
 
               <Select
                 label="Sort By"
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                value={`${localFilters.sortBy}-${localFilters.sortOrder}`}
+                onChange={(e) => {
+                  const [field, order] = e.target.value.split('-');
+                  setLocalFilters(prev => ({
+                    ...prev,
+                    sortBy: field,
+                    sortOrder: order
+                  }));
+                }}
               >
                 <option value="createdAt-desc">Newest First</option>
                 <option value="createdAt-asc">Oldest First</option>
@@ -129,13 +151,9 @@ function FilterModal({ isOpen, onClose }) {
                   </span>
                 </div>
                 <Select
-                  label={
-                    <div className="flex items-center gap-2">
-                      Assignment
-                    </div>
-                  }
-                  value={filters.assignment}
-                  onChange={(e) => setFilters(prev => ({ ...prev, assignment: e.target.value }))}
+                  label="Assignment"
+                  value={localFilters.assignment}
+                  onChange={(e) => setLocalFilters(prev => ({ ...prev, assignment: e.target.value }))}
                   disabled={true}
                 >
                   <option value="">All Tickets</option>
@@ -150,7 +168,7 @@ function FilterModal({ isOpen, onClose }) {
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary">
+            <Button variant="primary" onClick={handleApply}>
               Apply Filters
             </Button>
           </div>
@@ -160,17 +178,114 @@ function FilterModal({ isOpen, onClose }) {
   );
 }
 
+const TableCell = {
+  id: "w-[4.5rem] truncate",
+  title: "w-64 truncate",
+  subtitle: "w-32 truncate",
+  status: "w-24",
+  priority: "w-20",
+  customer: "w-40 truncate",
+  email: "w-48 truncate",
+  date: "w-28 truncate"
+};
+
 const TicketsPage = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    priority: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    perPage: 6,
+    total: 0,
+    totalPages: 0
+  });
+
+  useEffect(() => {
+    fetchTickets();
+  }, [pagination.page, pagination.perPage, filters, searchQuery]);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const queryParams = new URLSearchParams({
+        page: pagination.page,
+        limit: pagination.perPage,
+        ...(searchQuery && { search: searchQuery }),
+        ...(filters.status && { status: filters.status }),
+        ...(filters.priority && { priority: filters.priority }),
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder
+      });
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('session')}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to fetch tickets');
+      }
+
+      const data = await response.json();
+      setTickets(data.tickets || []);
+      setPagination(prev => ({
+        ...prev,
+        total: data.pagination.total || 0,
+        totalPages: data.pagination.pages || 0
+      }));
+    } catch (err) {
+      console.error('Error fetching tickets:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      page: newPage
+    }));
+  };
+
+  const handlePerPageChange = (value) => {
+    const newPerPage = parseInt(value);
+    if (newPerPage >= 1 && newPerPage <= 100) {
+      setPagination(prev => ({
+        ...prev,
+        perPage: newPerPage,
+        page: 1
+      }));
+    }
+  };
+
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when filters change
+  };
 
   return (
-    <div>
+    <div className="relative min-h-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-foreground">Tickets</h2>
         <div className="flex gap-4">
           <input
             type="text"
             placeholder="Search tickets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="px-4 py-2 border border-muted rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-accent"
           />
           <Button 
@@ -181,6 +296,12 @@ const TicketsPage = () => {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 border border-red-500/20 bg-red-500/10 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
 
       <div className="rounded-lg border border-muted overflow-hidden">
         <table className="w-full">
@@ -196,33 +317,79 @@ const TicketsPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-muted">
-            {EXAMPLE_TICKETS.map((ticket) => (
-              <tr key={ticket.id} className="hover:bg-muted/50">
-                <td className="p-4 text-sm text-foreground">{ticket.id}</td>
-                <td className="p-4 text-sm">
-                  <div className="text-primary">{ticket.title}</div>
-                  <div className="text-muted-foreground text-xs mt-1">
-                    {ticket.customerName}
-                  </div>
-                </td>
-                <td className="p-4 text-sm">
-                  <StatusBadge status={ticket.status} />
-                </td>
-                <td className="p-4 text-sm">
-                  <PriorityBadge priority={ticket.priority} />
-                </td>
-                <td className="p-4 text-sm">
-                  <div className="text-foreground">{ticket.customerName}</div>
-                  <div className="text-muted-foreground text-xs">{ticket.customerEmail}</div>
-                </td>
-                <td className="p-4 text-sm text-muted-foreground">
-                  {new Date(ticket.createdAt).toLocaleDateString()}
-                </td>
-                <td className="p-4 text-sm text-muted-foreground">
-                  {new Date(ticket.updatedAt).toLocaleDateString()}
+            {loading ? (
+              [...Array(pagination.perPage)].map((_, index) => (
+                <tr key={index} className="animate-pulse h-[72px]">
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-5 bg-muted rounded font-mono ${TableCell.id}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-5 bg-muted rounded mb-2 ${TableCell.title}`} />
+                    <div className={`h-4 bg-muted rounded opacity-70 ${TableCell.subtitle}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-6 bg-muted rounded-full ${TableCell.status}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-6 bg-muted rounded-full ${TableCell.priority}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-5 bg-muted rounded mb-2 ${TableCell.customer}`} />
+                    <div className={`h-4 bg-muted rounded opacity-70 ${TableCell.email}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-5 bg-muted rounded ${TableCell.date}`} />
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`h-5 bg-muted rounded ${TableCell.date}`} />
+                  </td>
+                </tr>
+              ))
+            ) : tickets.length > 0 ? (
+              tickets.map((ticket) => (
+                <tr key={ticket.id} className="hover:bg-muted/50 h-[72px]">
+                  <td className="p-4 text-sm text-muted-foreground font-mono align-middle">
+                    <div className={TableCell.id}>{formatId(ticket.id)}</div>
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`text-primary ${TableCell.title} leading-5 mb-2`}>{ticket.title}</div>
+                    <div className={`text-muted-foreground text-xs ${TableCell.subtitle} leading-4`}>
+                      {ticket.customer?.fullName}
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={TableCell.status}>
+                      <StatusBadge status={ticket.status} />
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={TableCell.priority}>
+                      <PriorityBadge priority={ticket.priority} />
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm align-middle">
+                    <div className={`text-foreground ${TableCell.customer} leading-5 mb-2`}>{ticket.customer?.fullName}</div>
+                    <div className={`text-muted-foreground text-xs ${TableCell.email} leading-4`}>{ticket.customer?.email}</div>
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground align-middle">
+                    <div className={`${TableCell.date} leading-5`}>
+                      {new Date(ticket.createdAt).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground align-middle">
+                    <div className={`${TableCell.date} leading-5`}>
+                      {new Date(ticket.updatedAt).toLocaleDateString()}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="p-4 text-center text-muted-foreground">
+                  No tickets found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
@@ -230,7 +397,23 @@ const TicketsPage = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center mt-4">
         <div className="text-sm text-muted-foreground">
-          Showing {EXAMPLE_TICKETS.length} of {EXAMPLE_TICKETS.length} tickets
+          {loading ? (
+            <span>Loading...</span>
+          ) : tickets.length > 0 ? (
+            <div className="space-x-1">
+              <span className="text-foreground font-medium">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <span className="text-muted-foreground/60">•</span>
+              <span>
+                Showing {((pagination.page - 1) * pagination.perPage) + 1} to{' '}
+                {Math.min(pagination.page * pagination.perPage, pagination.total)} of{' '}
+                {pagination.total} tickets
+              </span>
+            </div>
+          ) : (
+            <span>No tickets found</span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center">
@@ -238,7 +421,14 @@ const TicketsPage = () => {
             <input
               type="number"
               className="h-8 w-16 px-2 text-center border border-muted rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-accent"
-              value="10"
+              value={pagination.perPage}
+              onChange={(e) => handlePerPageChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                }
+              }}
+              onWheel={(e) => e.target.blur()}
               min="1"
               max="100"
             />
@@ -247,14 +437,16 @@ const TicketsPage = () => {
             <Button
               variant="outline"
               size="sm"
-              disabled={true}
+              disabled={loading || pagination.page === 1}
+              onClick={() => handlePageChange(pagination.page - 1)}
             >
               Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={true}
+              disabled={loading || pagination.page >= pagination.totalPages}
+              onClick={() => handlePageChange(pagination.page + 1)}
             >
               Next
             </Button>
@@ -264,7 +456,9 @@ const TicketsPage = () => {
 
       <FilterModal 
         isOpen={isFilterModalOpen} 
-        onClose={() => setIsFilterModalOpen(false)} 
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
       />
     </div>
   );
