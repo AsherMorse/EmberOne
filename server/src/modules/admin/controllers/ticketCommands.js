@@ -72,6 +72,28 @@ export const processCommand = async (command) => {
             sortOrder: queryResult.query.sort?.order
         });
 
+        // Check if we found any tickets
+        if (!tickets.tickets || tickets.tickets.length === 0) {
+            return {
+                query: queryResult.query,
+                explanation: 'No tickets found matching the criteria',
+                tickets: [],
+                matchCount: 0,
+                suggestedChanges: {
+                    changes: [],
+                    summary: 'No tickets found to update',
+                    impact_assessment: {
+                        level: 'low',
+                        factors: {
+                            num_tickets: 0,
+                            field_changes: 0
+                        },
+                        reasoning: 'No tickets matched the search criteria'
+                    }
+                }
+            };
+        }
+
         // Generate changes using the changeGenerationChain
         const changeResult = await changeGenerationChain.invoke({
             command: command.text,

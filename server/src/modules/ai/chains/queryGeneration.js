@@ -82,24 +82,11 @@ Available Filters (use ONLY what's needed):
 }}
 
 Rules:
-1. ONLY extract search terms from the input command text
-2. If a topic/keyword is mentioned in the command (like "database", "API", etc):
-   - You MUST include both title_contains and description_contains
-   - Use the EXACT same search term in both
-   - Example: if command says "database", use "database" (not "API" or anything else)
-
-3. ONLY include status if explicitly mentioned in the command:
-   - "open" -> status: "OPEN"
-   - "in progress" -> status: "IN_PROGRESS"
-   - No status mentioned -> don't include status
-
-4. ONLY include priority if explicitly mentioned in the command:
-   - "critical" -> priority: "CRITICAL"
-   - "high" -> priority: "HIGH"
-   - "medium" -> priority: "MEDIUM"
-   - "low" -> priority: "LOW"
-
-5. NEVER return empty filters - there must always be at least one filter
+1. For creative changes (like improving titles/descriptions), return empty filters to get all tickets
+2. For specific changes (status/priority), include only those filters
+3. ONLY include status if explicitly mentioned
+4. ONLY include priority if explicitly mentioned
+5. NEVER return empty filters unless it's a creative change
 
 Examples:
 Input: "find database tickets"
@@ -113,16 +100,12 @@ Output: {{
   "explanation": "Finding tickets containing 'database' in title or description"
 }}
 
-Input: "find open API tickets"
+Input: "change lots of tickets to have more realistic titles"
 Output: {{
   "query": {{
-    "filters": {{
-      "status": "OPEN",
-      "title_contains": "API",
-      "description_contains": "API"
-    }}
+    "filters": {{}}
   }},
-  "explanation": "Finding open tickets containing 'API' in title or description"
+  "explanation": "Finding all tickets to improve their titles"
 }}
 
 Input: "set all high priority tickets to medium priority"
@@ -132,7 +115,7 @@ Output: {{
       "priority": "HIGH"
     }}
   }},
-  "explanation": "Finding all tickets with high priority to change them to medium priority"
+  "explanation": "Finding all high priority tickets to change them to medium priority"
 }}`]
 ]);
 
@@ -156,8 +139,13 @@ const validateResponse = (response) => {
                            filters.customer_email_contains ||
                            filters.customer_name_contains;
     
-    // At least one type of filter must be present
-    if (!hasSearch && !hasStatus && !hasPriority && !hasDateFilter && !hasPeopleFilter) {
+    // Allow empty filters for creative changes (like improving titles/descriptions)
+    const isCreativeChange = response.explanation.toLowerCase().includes('improve') ||
+                            response.explanation.toLowerCase().includes('realistic') ||
+                            response.explanation.toLowerCase().includes('better');
+    
+    // At least one type of filter must be present unless it's a creative change
+    if (!isCreativeChange && !hasSearch && !hasStatus && !hasPriority && !hasDateFilter && !hasPeopleFilter) {
       throw Errors.ambiguousCommand();
     }
 

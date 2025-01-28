@@ -108,25 +108,32 @@ const validateChanges = (changes) => {
       );
     }
 
-    // Check for consistency in similar tickets
-    const similarTickets = new Map();
-    for (const change of parsed.changes) {
-      const key = `${change.current_state.status}-${change.current_state.priority}`;
-      if (!similarTickets.has(key)) {
-        similarTickets.set(key, []);
+    // For creative changes (title/description updates), skip consistency check
+    const isCreativeChange = parsed.changes.some(change => 
+      change.updates.title || change.updates.description
+    );
+    
+    if (!isCreativeChange) {
+      // Check for consistency in similar tickets
+      const similarTickets = new Map();
+      for (const change of parsed.changes) {
+        const key = `${change.current_state.status}-${change.current_state.priority}`;
+        if (!similarTickets.has(key)) {
+          similarTickets.set(key, []);
+        }
+        similarTickets.get(key).push(change);
       }
-      similarTickets.get(key).push(change);
-    }
 
-    // Compare updates for similar tickets
-    for (const [key, tickets] of similarTickets.entries()) {
-      if (tickets.length > 1) {
-        const firstUpdate = JSON.stringify(tickets[0].updates);
-        for (const ticket of tickets.slice(1)) {
-          if (JSON.stringify(ticket.updates) !== firstUpdate) {
-            throw Errors.inconsistentChanges(
-              `Similar tickets with state ${key} have inconsistent updates`
-            );
+      // Compare updates for similar tickets
+      for (const [key, tickets] of similarTickets.entries()) {
+        if (tickets.length > 1) {
+          const firstUpdate = JSON.stringify(tickets[0].updates);
+          for (const ticket of tickets.slice(1)) {
+            if (JSON.stringify(ticket.updates) !== firstUpdate) {
+              throw Errors.inconsistentChanges(
+                `Similar tickets with state ${key} have inconsistent updates`
+              );
+            }
           }
         }
       }
@@ -154,68 +161,68 @@ const validateChanges = (changes) => {
  * Instructs the model to generate specific changes for matched tickets.
  */
 const prompt = ChatPromptTemplate.fromMessages([
-  ['system', `You are a helpful AI assistant specifying exact changes for tickets.
+  ['system', `You are a JSON-only response generator for ticket changes.
+DO NOT include any explanatory text before or after the JSON.
+ONLY return a valid JSON object.
+
 The admin wants to: "{command}"
 Here are the matching tickets: {tickets}
-Specify exactly what changes should be made to each ticket.
-Be consistent in how you handle similar tickets.
-Consider the impact of your changes carefully.
 
-Your response must be a JSON object with this structure:
+IMPORTANT: ONLY suggest changes for tickets that were provided in the input.
+DO NOT make up ticket IDs or reference tickets that weren't in the input.
+Each ticket_id in your response MUST match one from the input tickets.
+
+Return EXACTLY this structure (fields marked with ? are optional but don't include the ? in the output):
 {{
   "changes": [
     {{
-      "ticket_id": "string", // Required
-      "current_state": {{     // All fields optional, include only what's relevant
-        "title?": "string",
-        "description?": "string",
-        "status?": "string",
-        "priority?": "string",
-        "assigned_agent_id?": "string",
-        "customer?": {{
-          "name?": "string",
-          "email?": "string"
+      "ticket_id": "string",  // MUST match an ID from input tickets
+      "current_state": {{
+        "title": "string",          // optional
+        "description": "string",     // optional
+        "status": "string",         // optional
+        "priority": "string",       // optional
+        "assigned_agent_id": "string",  // optional
+        "customer": {{              // optional
+          "name": "string",         // optional
+          "email": "string"         // optional
         }}
       }},
-      "updates": {{          // At least one field must be provided
-        "title?": "string",
-        "description?": "string",
-        "status?": "OPEN" | "IN_PROGRESS" | "WAITING" | "CLOSED",
-        "priority?": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
-        "assigned_agent_id?": "string"
+      "updates": {{
+        "title": "string",          // optional
+        "description": "string",     // optional
+        "status": "OPEN" | "IN_PROGRESS" | "WAITING" | "CLOSED",  // optional
+        "priority": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",       // optional
+        "assigned_agent_id": "string"  // optional
       }},
-      "explanation": "string"  // Required
+      "explanation": "string"
     }}
   ],
-  "summary": "string",      // Required
-  "impact_assessment": {{   // Required
+  "summary": "string",
+  "impact_assessment": {{
     "level": "low" | "medium" | "high",
     "factors": {{
-      "num_tickets": number,    // Must be an integer
-      "field_changes": number,  // Must be an integer
-      "status_changes?": number,  // Must be an integer if provided
-      "priority_shifts?": {{      // All numbers must be non-negative integers
-        "up": number,     // How many tickets are increasing in priority
-        "down": number    // How many tickets are decreasing in priority
+      "num_tickets": number,
+      "field_changes": number,
+      "status_changes": number,      // optional
+      "priority_shifts": {{          // optional
+        "up": number,
+        "down": number
       }},
-      "assignment_changes?": number  // Must be an integer if provided
+      "assignment_changes": number   // optional
     }},
     "reasoning": "string"
   }}
 }}
 
-For example, if changing priority from HIGH to MEDIUM, you should:
-1. Set priority to "MEDIUM" for each ticket
-2. Provide a clear explanation for each change
-3. Include an impact assessment based on number of tickets affected
-4. All numbers in the impact assessment must be integers (whole numbers)
-5. Priority shift numbers must be non-negative integers
-
-Remember to follow these rules:
-1. Only include fields that are relevant to the requested changes
-2. Be consistent across similar tickets
-3. Assess impact based on number of tickets and significance of changes
-4. Use whole numbers (integers) for all numeric fields`]
+Guidelines (but ONLY return JSON, no other text):
+1. ONLY suggest changes for tickets that were provided in the input
+2. For creative changes, generate professional content
+3. Keep existing context and key information
+4. Make titles concise but descriptive
+5. Make descriptions clear and detailed
+6. Use integers for all numbers
+7. Include clear explanations for changes`]
 ]);
 
 /**
