@@ -16,6 +16,9 @@ import AgentTicketsPage from './pages/agent/TicketsPage';
 import AgentEditTicketPage from './pages/agent/EditTicketPage';
 import AgentViewCommentsPage from './pages/agent/ViewCommentsPage';
 import ViewFeedbackPage from './pages/agent/ViewFeedbackPage';
+import AdminDashboardPage from './pages/admin/DashboardPage';
+import AdminTicketsPage from './pages/admin/TicketsPage';
+import AdminCommandsPage from './pages/admin/CommandsPage';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -97,14 +100,18 @@ const router = createBrowserRouter(
 
       {/* Admin Routes */}
       <Route 
-        path="/admin/*" 
+        path="/admin"
         element={
           <ProtectedRoute 
-            component={() => <div>Admin Dashboard Coming Soon</div>}
+            component={AdminDashboardPage}
             requiredRole={ROLES.ADMIN}
           />
-        } 
-      />
+        }
+      >
+        <Route index element={<AdminTicketsPage />} />
+        <Route path="tickets" element={<AdminTicketsPage />} />
+        <Route path="commands" element={<AdminCommandsPage />} />
+      </Route>
 
       {/* Catch-all route for 404 */}
       <Route path="*" element={
