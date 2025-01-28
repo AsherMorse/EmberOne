@@ -5,6 +5,7 @@
 
 import { Errors } from '../../ai/utils/errors.js';
 import { queryGenerationChain } from '../../ai/chains/queryGeneration.js';
+import { changeGenerationChain } from '../../ai/chains/changeGeneration.js';
 import { Client } from 'langsmith';
 import { ticketService } from '../../tickets/services/ticket.service.js';
 
@@ -26,7 +27,8 @@ export const processCommand = async (command) => {
             throw Errors.invalidCommand('Command text is required');
         }
 
-        const result = await queryGenerationChain.invoke({
+        // Generate query from command
+        const queryResult = await queryGenerationChain.invoke({
             command: command.text,
             current_date: new Date().toISOString()
         }, {
@@ -43,37 +45,61 @@ export const processCommand = async (command) => {
             }]
         });
 
-        if (!result || !result.query) {
+        if (!queryResult || !queryResult.query) {
             throw Errors.invalidCommand('Failed to generate query from command');
         }
 
         // Build search string from title and description filters
         const searchTerms = [];
-        if (result.query.filters.title_contains) searchTerms.push(result.query.filters.title_contains);
-        if (result.query.filters.description_contains) searchTerms.push(result.query.filters.description_contains);
+        if (queryResult.query.filters.title_contains) searchTerms.push(queryResult.query.filters.title_contains);
+        if (queryResult.query.filters.description_contains) searchTerms.push(queryResult.query.filters.description_contains);
 
         // Fetch matching tickets using the generated query
         const tickets = await ticketService.listTickets(null, 'ADMIN', {
-            status: result.query.filters.status,
-            priority: result.query.filters.priority,
-            search: result.query.filters.title_contains,
-            assignedAgentId: result.query.filters.assigned_agent_id,
-            customerEmail: result.query.filters.customer_email_contains,
-            customerName: result.query.filters.customer_name_contains,
-            createdAfter: result.query.filters.created_after,
-            createdBefore: result.query.filters.created_before,
-            updatedAfter: result.query.filters.updated_after,
-            updatedBefore: result.query.filters.updated_before,
-            closedAfter: result.query.filters.closed_after,
-            closedBefore: result.query.filters.closed_before,
-            sortBy: result.query.sort?.field,
-            sortOrder: result.query.sort?.order
+            status: queryResult.query.filters.status,
+            priority: queryResult.query.filters.priority,
+            search: queryResult.query.filters.title_contains,
+            assignedAgentId: queryResult.query.filters.assigned_agent_id,
+            customerEmail: queryResult.query.filters.customer_email_contains,
+            customerName: queryResult.query.filters.customer_name_contains,
+            createdAfter: queryResult.query.filters.created_after,
+            createdBefore: queryResult.query.filters.created_before,
+            updatedAfter: queryResult.query.filters.updated_after,
+            updatedBefore: queryResult.query.filters.updated_before,
+            closedAfter: queryResult.query.filters.closed_after,
+            closedBefore: queryResult.query.filters.closed_before,
+            sortBy: queryResult.query.sort?.field,
+            sortOrder: queryResult.query.sort?.order
         });
 
+        // Generate changes using the changeGenerationChain
+        const changeResult = await changeGenerationChain.invoke({
+            command: command.text,
+            tickets: JSON.stringify(tickets.tickets)
+        }, {
+            callbacks: [{
+                handleChainEnd: async (outputs) => {
+                    await client.createRun({
+                        name: "Change Generation",
+                        run_type: "chain",
+                        inputs: { 
+                            command: command.text,
+                            tickets: tickets.tickets 
+                        },
+                        outputs: outputs,
+                        tags: ["ticket_command", "change_generation"]
+                    });
+                }
+            }]
+        });
+
+        console.log('Generated Changes:', JSON.stringify(changeResult, null, 2));
+
         return {
-            ...result,
+            ...queryResult,
             tickets: tickets.tickets,
-            matchCount: tickets.tickets.length
+            matchCount: tickets.tickets.length,
+            suggestedChanges: changeResult
         };
     } catch (error) {
         if (error.code) {

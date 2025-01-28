@@ -61,6 +61,9 @@ Available Filters (use ONLY what's needed):
       // Status Filter (ONLY if status mentioned):
       "status": "OPEN" | "IN_PROGRESS" | "WAITING" | "CLOSED",
 
+      // Priority Filter (ONLY if priority mentioned):
+      "priority": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+
       // Date Filters (ONLY if dates mentioned):
       "created_after": string,   // ISO date
       "created_before": string,  // ISO date
@@ -90,7 +93,13 @@ Rules:
    - "in progress" -> status: "IN_PROGRESS"
    - No status mentioned -> don't include status
 
-4. NEVER return empty filters - there must always be at least one filter
+4. ONLY include priority if explicitly mentioned in the command:
+   - "critical" -> priority: "CRITICAL"
+   - "high" -> priority: "HIGH"
+   - "medium" -> priority: "MEDIUM"
+   - "low" -> priority: "LOW"
+
+5. NEVER return empty filters - there must always be at least one filter
 
 Examples:
 Input: "find database tickets"
@@ -114,6 +123,16 @@ Output: {{
     }}
   }},
   "explanation": "Finding open tickets containing 'API' in title or description"
+}}
+
+Input: "set all high priority tickets to medium priority"
+Output: {{
+  "query": {{
+    "filters": {{
+      "priority": "HIGH"
+    }}
+  }},
+  "explanation": "Finding all tickets with high priority to change them to medium priority"
 }}`]
 ]);
 
@@ -129,6 +148,7 @@ const validateResponse = (response) => {
     const filters = parsed.query.filters;
     const hasSearch = filters.title_contains || filters.description_contains;
     const hasStatus = filters.status;
+    const hasPriority = filters.priority;
     const hasDateFilter = filters.created_after || filters.created_before || 
                          filters.updated_after || filters.updated_before ||
                          filters.closed_after || filters.closed_before;
@@ -137,7 +157,7 @@ const validateResponse = (response) => {
                            filters.customer_name_contains;
     
     // At least one type of filter must be present
-    if (!hasSearch && !hasStatus && !hasDateFilter && !hasPeopleFilter) {
+    if (!hasSearch && !hasStatus && !hasPriority && !hasDateFilter && !hasPeopleFilter) {
       throw Errors.ambiguousCommand();
     }
 

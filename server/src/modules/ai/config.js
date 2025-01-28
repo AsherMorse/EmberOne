@@ -19,6 +19,16 @@ export const gpt4oMini = new ChatOpenAI({
   openAIApiKey: process.env.OPENAI_API_KEY,
 });
 
+/**
+ * GPT-4o model instance configured for more complex ticket management tasks.
+ * Uses a moderate temperature for balanced creativity and consistency.
+ */
+export const gpt4o = new ChatOpenAI({
+  modelName: 'gpt-4',
+  temperature: 0.3, // Moderate temperature for balanced responses
+  openAIApiKey: process.env.OPENAI_API_KEY,
+});
+
 // Base chain configuration options
 export const baseChainConfig = {
   verbose: process.env.NODE_ENV === 'development',

@@ -8,22 +8,22 @@
 import { z } from 'zod';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
-import { gpt4oMini } from '../config.js';
+import { gpt4o } from '../config.js';
 import { Errors } from '../utils/errors.js';
 
 /**
  * Schema for ticket state representation
  */
 const TicketStateSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  status: z.string(),
-  priority: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  status: z.string().optional(),
+  priority: z.string().optional(),
   assigned_agent_id: z.string().optional(),
   customer: z.object({
-    name: z.string(),
-    email: z.string()
-  })
+    name: z.string().optional(),
+    email: z.string().optional()
+  }).optional()
 });
 
 /**
@@ -35,6 +35,8 @@ const TicketUpdatesSchema = z.object({
   status: z.enum(['OPEN', 'IN_PROGRESS', 'WAITING', 'CLOSED']).optional(),
   priority: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']).optional(),
   assigned_agent_id: z.string().optional()
+}).refine(data => Object.keys(data).length > 0, {
+  message: "At least one update field must be provided"
 });
 
 /**
@@ -43,14 +45,14 @@ const TicketUpdatesSchema = z.object({
 const ImpactAssessmentSchema = z.object({
   level: z.enum(['low', 'medium', 'high']),
   factors: z.object({
-    num_tickets: z.number(),
-    field_changes: z.number(),
-    status_changes: z.number(),
+    num_tickets: z.number().int(),
+    field_changes: z.number().int(),
+    status_changes: z.number().int().optional(),
     priority_shifts: z.object({
-      up: z.number(),
-      down: z.number()
-    }),
-    assignment_changes: z.number()
+      up: z.number().int().min(0).optional(),
+      down: z.number().int().min(0).optional()
+    }).optional(),
+    assignment_changes: z.number().int().optional()
   }),
   reasoning: z.string()
 });
@@ -156,10 +158,64 @@ const prompt = ChatPromptTemplate.fromMessages([
 The admin wants to: "{command}"
 Here are the matching tickets: {tickets}
 Specify exactly what changes should be made to each ticket.
-Only return a JSON object matching the ChangeResponse type.
 Be consistent in how you handle similar tickets.
-Consider the impact of your changes carefully.`],
-  ['human', '{input}']
+Consider the impact of your changes carefully.
+
+Your response must be a JSON object with this structure:
+{{
+  "changes": [
+    {{
+      "ticket_id": "string", // Required
+      "current_state": {{     // All fields optional, include only what's relevant
+        "title?": "string",
+        "description?": "string",
+        "status?": "string",
+        "priority?": "string",
+        "assigned_agent_id?": "string",
+        "customer?": {{
+          "name?": "string",
+          "email?": "string"
+        }}
+      }},
+      "updates": {{          // At least one field must be provided
+        "title?": "string",
+        "description?": "string",
+        "status?": "OPEN" | "IN_PROGRESS" | "WAITING" | "CLOSED",
+        "priority?": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+        "assigned_agent_id?": "string"
+      }},
+      "explanation": "string"  // Required
+    }}
+  ],
+  "summary": "string",      // Required
+  "impact_assessment": {{   // Required
+    "level": "low" | "medium" | "high",
+    "factors": {{
+      "num_tickets": number,    // Must be an integer
+      "field_changes": number,  // Must be an integer
+      "status_changes?": number,  // Must be an integer if provided
+      "priority_shifts?": {{      // All numbers must be non-negative integers
+        "up": number,     // How many tickets are increasing in priority
+        "down": number    // How many tickets are decreasing in priority
+      }},
+      "assignment_changes?": number  // Must be an integer if provided
+    }},
+    "reasoning": "string"
+  }}
+}}
+
+For example, if changing priority from HIGH to MEDIUM, you should:
+1. Set priority to "MEDIUM" for each ticket
+2. Provide a clear explanation for each change
+3. Include an impact assessment based on number of tickets affected
+4. All numbers in the impact assessment must be integers (whole numbers)
+5. Priority shift numbers must be non-negative integers
+
+Remember to follow these rules:
+1. Only include fields that are relevant to the requested changes
+2. Be consistent across similar tickets
+3. Assess impact based on number of tickets and significance of changes
+4. Use whole numbers (integers) for all numeric fields`]
 ]);
 
 /**
@@ -169,13 +225,15 @@ Consider the impact of your changes carefully.`],
  */
 export const changeGenerationChain = RunnableSequence.from([
   prompt,
-  gpt4oMini.bind({ 
-    function_call: { name: "output" }, 
-    functions: [{ 
-      name: "output", 
-      parameters: ChangeGenerationSchema.shape
-    }]
-  }),
-  (response) => response.function_call.arguments,
+  gpt4o,
+  (response) => {
+    try {
+      const content = response.content;
+      console.log('Raw model response:', content); // Debug log
+      return typeof content === 'string' ? JSON.parse(content) : content;
+    } catch (error) {
+      throw new Error(`Failed to parse response: ${error.message}`);
+    }
+  },
   validateChanges
 ]); 
