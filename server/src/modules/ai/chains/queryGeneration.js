@@ -46,25 +46,25 @@ const QueryGenerationSchema = z.object({
  */
 const prompt = ChatPromptTemplate.fromMessages([
   ['system', `You convert natural language commands into minimal ticket search queries.
-Your job is to extract ONLY the minimum filters needed to match what was asked for and return them in JSON format.
+Your job is to extract filters from the command and return them in JSON format.
 
 Input command: "{command}"
 
-Available Filters (use ONLY what's needed):
+Available Filters:
 {{
   "query": {{
     "filters": {{
-      // Topic Search (REQUIRED for any topic/keyword mentioned):
-      "title_contains": string,      // MUST include search term
-      "description_contains": string, // MUST use same term as title_contains
+      // Topic Search:
+      "title_contains": string,      // Search term in title
+      "description_contains": string, // Search term in description
 
-      // Status Filter (ONLY if status mentioned):
+      // Status Filter:
       "status": "OPEN" | "IN_PROGRESS" | "WAITING" | "CLOSED",
 
-      // Priority Filter (ONLY if priority mentioned):
+      // Priority Filter:
       "priority": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
 
-      // Date Filters (ONLY if dates mentioned):
+      // Date Filters:
       "created_after": string,   // ISO date
       "created_before": string,  // ISO date
       "updated_after": string,   // ISO date
@@ -72,7 +72,7 @@ Available Filters (use ONLY what's needed):
       "closed_after": string,    // ISO date
       "closed_before": string,   // ISO date
 
-      // People Filters (ONLY if people mentioned):
+      // People Filters:
       "assigned_agent_id": string,         // Agent ID
       "customer_email_contains": string,   // Customer email
       "customer_name_contains": string     // Customer name
@@ -82,11 +82,9 @@ Available Filters (use ONLY what's needed):
 }}
 
 Rules:
-1. For creative changes (like improving titles/descriptions), return empty filters to get all tickets
-2. For specific changes (status/priority), include only those filters
-3. ONLY include status if explicitly mentioned
-4. ONLY include priority if explicitly mentioned
-5. NEVER return empty filters unless it's a creative change
+1. For creative changes or general updates, return empty filters to get all tickets
+2. For specific changes, include only the relevant filters
+3. Always return a valid response, even if the command is unclear
 
 Examples:
 Input: "find database tickets"
@@ -100,22 +98,20 @@ Output: {{
   "explanation": "Finding tickets containing 'database' in title or description"
 }}
 
-Input: "change lots of tickets to have more realistic titles"
+Input: "update all tickets"
 Output: {{
   "query": {{
     "filters": {{}}
   }},
-  "explanation": "Finding all tickets to improve their titles"
+  "explanation": "Finding all tickets to update"
 }}
 
-Input: "set all high priority tickets to medium priority"
+Input: "make tickets better"
 Output: {{
   "query": {{
-    "filters": {{
-      "priority": "HIGH"
-    }}
+    "filters": {{}}
   }},
-  "explanation": "Finding all high priority tickets to change them to medium priority"
+  "explanation": "Finding all tickets to improve"
 }}`]
 ]);
 
@@ -144,11 +140,7 @@ const validateResponse = (response) => {
                             response.explanation.toLowerCase().includes('realistic') ||
                             response.explanation.toLowerCase().includes('better');
     
-    // At least one type of filter must be present unless it's a creative change
-    if (!isCreativeChange && !hasSearch && !hasStatus && !hasPriority && !hasDateFilter && !hasPeopleFilter) {
-      throw Errors.ambiguousCommand();
-    }
-
+    // Remove the ambiguous command check to allow any input
     return parsed;
   } catch (error) {
     if (error.name === 'AIProcessingError') {

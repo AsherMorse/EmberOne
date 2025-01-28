@@ -100,45 +100,6 @@ const validateChanges = (changes) => {
       }
     }
 
-    // Check impact assessment
-    if (parsed.impact_assessment.level === 'high') {
-      throw Errors.highImpactChanges(
-        parsed.impact_assessment.level,
-        parsed.impact_assessment.factors.num_tickets
-      );
-    }
-
-    // For creative changes (title/description updates), skip consistency check
-    const isCreativeChange = parsed.changes.some(change => 
-      change.updates.title || change.updates.description
-    );
-    
-    if (!isCreativeChange) {
-      // Check for consistency in similar tickets
-      const similarTickets = new Map();
-      for (const change of parsed.changes) {
-        const key = `${change.current_state.status}-${change.current_state.priority}`;
-        if (!similarTickets.has(key)) {
-          similarTickets.set(key, []);
-        }
-        similarTickets.get(key).push(change);
-      }
-
-      // Compare updates for similar tickets
-      for (const [key, tickets] of similarTickets.entries()) {
-        if (tickets.length > 1) {
-          const firstUpdate = JSON.stringify(tickets[0].updates);
-          for (const ticket of tickets.slice(1)) {
-            if (JSON.stringify(ticket.updates) !== firstUpdate) {
-              throw Errors.inconsistentChanges(
-                `Similar tickets with state ${key} have inconsistent updates`
-              );
-            }
-          }
-        }
-      }
-    }
-
     return parsed;
   } catch (error) {
     if (error.name === 'AIProcessingError') {

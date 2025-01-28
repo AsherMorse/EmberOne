@@ -31,6 +31,14 @@ export async function processCommand(commandData) {
     try {
         // Start command processing
         logger.info(`Starting command processing: ${commandId}`);
+        
+        // Broadcast command start
+        sseService.broadcast('command_start', {
+            commandId,
+            command: commandData.text,
+            startTime: Date.now()
+        });
+        
         const result = await processCommandStages(commandData, timer);
         
         // Mark command as complete
@@ -58,6 +66,9 @@ async function processCommandStages(commandData, timer) {
         // Stage 1: Understanding command
         timer.startStage(1);
         logger.debug(`Stage 1: Understanding command ${timer.commandId}`);
+        // Add a small delay to simulate understanding
+        await new Promise(resolve => setTimeout(resolve, 100));
+        timer.endStage();
 
         // Stage 2: Converting to query
         timer.startStage(2);
@@ -82,6 +93,7 @@ async function processCommandStages(commandData, timer) {
         if (!queryResult || !queryResult.query) {
             throw Errors.invalidCommand('Failed to generate query from command');
         }
+        timer.endStage();
 
         // Stage 3: Finding tickets
         timer.startStage(3);
@@ -105,11 +117,12 @@ async function processCommandStages(commandData, timer) {
 
         // Update ticket count for timing estimates
         await timer.initializeEstimates(tickets.tickets?.length || 0);
+        timer.endStage();
 
         // Check if we found any tickets
         if (!tickets.tickets || tickets.tickets.length === 0) {
             timer.startStage(6); // Skip to final stage
-            return {
+            const result = {
                 query: queryResult.query,
                 explanation: 'No tickets found matching the criteria',
                 tickets: [],
@@ -127,11 +140,16 @@ async function processCommandStages(commandData, timer) {
                     }
                 }
             };
+            timer.endStage();
+            return result;
         }
 
         // Stage 4: Analyzing tickets
         timer.startStage(4);
         logger.debug(`Stage 4: Analyzing tickets ${timer.commandId}`);
+        // Add a small delay to simulate analysis
+        await new Promise(resolve => setTimeout(resolve, 100));
+        timer.endStage();
 
         // Stage 5: Preparing changes
         timer.startStage(5);
@@ -155,17 +173,22 @@ async function processCommandStages(commandData, timer) {
                 }
             }]
         });
+        timer.endStage();
 
         // Stage 6: Ready for review
         timer.startStage(6);
         logger.debug(`Stage 6: Ready for review ${timer.commandId}`);
-
-        return {
+        
+        // Prepare the result
+        const result = {
             ...queryResult,
             tickets: tickets.tickets,
             matchCount: tickets.tickets.length,
             suggestedChanges: changeResult
         };
+        
+        timer.endStage();
+        return result;
     } catch (error) {
         if (error.code) {
             throw error; // Pass through AIErrors

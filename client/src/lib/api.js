@@ -34,4 +34,15 @@ export async function executeChanges(changes) {
   }
 
   return response.json();
+}
+
+export async function getAverageStageDurations() {
+  const response = await fetch('/api/admin/command-timings/averages');
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to get average stage durations');
+  }
+
+  return response.json();
 } 

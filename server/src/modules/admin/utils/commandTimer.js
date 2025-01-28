@@ -2,6 +2,7 @@ import { sseService } from '../services/sse.service.js';
 import { logger } from '../../../utils/logger.js';
 import { db } from '../../../db/index.js';
 import { commandTimings } from '../../../db/schema/index.js';
+import { commandTimingsService } from '../services/commandTimings.service.js';
 
 /**
  * Stage descriptions for command processing
@@ -19,12 +20,12 @@ export const COMMAND_STAGES = {
  * Default stage durations in milliseconds
  */
 export const DEFAULT_DURATIONS = {
-    stage_1: 500,  // Understanding command
-    stage_2: 1000, // Converting to query
-    stage_3: 1500, // Finding tickets
-    stage_4: 1000, // Analyzing tickets
-    stage_5: 1500, // Preparing changes
-    stage_6: 500   // Ready for review
+    stage_1: 1000,  // Understanding command
+    stage_2: 2000,  // Converting to query
+    stage_3: 2000,  // Finding tickets
+    stage_4: 1500,  // Analyzing tickets
+    stage_5: 2000,  // Preparing changes
+    stage_6: 1000   // Ready for review
 };
 
 /**
@@ -46,6 +47,21 @@ export class CommandTimer {
         this.estimatedDurations = { ...DEFAULT_DURATIONS };
         this.matchedTicketsCount = 0;
         this.status = 'initializing';
+        this.lastProgressUpdate = Date.now();
+        this.progressUpdateInterval = 100; // Update progress every 100ms
+    }
+
+    /**
+     * Calculate a smooth progress percentage
+     * @param {number} elapsed - Time elapsed in milliseconds
+     * @param {number} estimated - Estimated duration in milliseconds
+     * @returns {number} Progress percentage (0-100)
+     */
+    calculateProgress(elapsed, estimated) {
+        // Use a sigmoid function to smooth out the progress
+        const x = (elapsed / estimated) * 6 - 3; // Scale to -3 to 3 for sigmoid
+        const sigmoid = 1 / (1 + Math.exp(-x));
+        return Math.min(Math.round(sigmoid * 100), 99);
     }
 
     /**
@@ -53,8 +69,42 @@ export class CommandTimer {
      * @param {number} ticketCount - Expected number of tickets to process
      */
     async initializeEstimates(ticketCount) {
-        this.matchedTicketsCount = ticketCount;
-        this.emitProgress();
+        try {
+            // Get average durations from historical data
+            const averageDurations = await commandTimingsService.getAverageStageDurations();
+            logger.debug('Using average durations:', averageDurations);
+            
+            // Use average durations or fallback to defaults
+            this.estimatedDurations = {
+                stage_1: averageDurations.stage_1,
+                stage_2: averageDurations.stage_2,
+                stage_3: averageDurations.stage_3,
+                stage_4: averageDurations.stage_4,
+                stage_5: averageDurations.stage_5,
+                stage_6: averageDurations.stage_6
+            };
+
+            // Adjust durations based on ticket count
+            if (ticketCount > 0) {
+                this.estimatedDurations.stage_3 += ticketCount * 100; // Add 100ms per ticket for finding
+                this.estimatedDurations.stage_4 += ticketCount * 150; // Add 150ms per ticket for analysis
+                this.estimatedDurations.stage_5 += ticketCount * 100; // Add 100ms per ticket for changes
+            }
+
+            this.matchedTicketsCount = ticketCount;
+            this.emitProgress();
+        } catch (error) {
+            logger.error('Failed to get average durations, using defaults:', error);
+            // Fallback to default durations
+            this.estimatedDurations = { ...DEFAULT_DURATIONS };
+            if (ticketCount > 0) {
+                this.estimatedDurations.stage_3 += ticketCount * 100;
+                this.estimatedDurations.stage_4 += ticketCount * 150;
+                this.estimatedDurations.stage_5 += ticketCount * 100;
+            }
+            this.matchedTicketsCount = ticketCount;
+            this.emitProgress();
+        }
     }
 
     /**
@@ -69,7 +119,8 @@ export class CommandTimer {
         this.currentStage = {
             number: stageNumber,
             startTime: Date.now(),
-            description: COMMAND_STAGES[stageNumber]
+            description: COMMAND_STAGES[stageNumber],
+            progressInterval: setInterval(() => this.emitProgress(), this.progressUpdateInterval)
         };
 
         this.status = 'processing';
@@ -82,12 +133,18 @@ export class CommandTimer {
     endStage() {
         if (!this.currentStage) return;
 
+        // Clear the progress update interval
+        if (this.currentStage.progressInterval) {
+            clearInterval(this.currentStage.progressInterval);
+        }
+
         const duration = Date.now() - this.currentStage.startTime;
         this.stages.set(this.currentStage.number, {
             number: this.currentStage.number,
             duration,
             description: this.currentStage.description,
-            completed: true
+            completed: true,
+            percentage: 100 // Set to 100% when complete
         });
 
         this.emitProgress();
@@ -213,7 +270,7 @@ export class CommandTimer {
         if (this.currentStage) {
             const stageElapsed = Date.now() - this.currentStage.startTime;
             const estimatedDuration = this.estimatedDurations[`stage_${this.currentStage.number}`];
-            const percentage = Math.min(Math.round((stageElapsed / estimatedDuration) * 100), 99);
+            const percentage = this.calculateProgress(stageElapsed, estimatedDuration);
 
             progress.currentStage = {
                 number: this.currentStage.number,
