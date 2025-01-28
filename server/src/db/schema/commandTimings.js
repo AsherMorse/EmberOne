@@ -11,6 +11,7 @@ export const commandTimings = pgTable('command_timings', {
   id: uuid('id').defaultRandom().primaryKey(),
   command_text: text('command_text').notNull(),
   executed_at: timestamp('executed_at').notNull().defaultNow(),
+  // Stage durations in milliseconds
   stage_1_duration: integer('stage_1_duration').notNull(), // Understanding command
   stage_2_duration: integer('stage_2_duration').notNull(), // Converting to query
   stage_3_duration: integer('stage_3_duration').notNull(), // Finding tickets

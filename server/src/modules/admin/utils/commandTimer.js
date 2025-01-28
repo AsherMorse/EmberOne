@@ -1,5 +1,7 @@
 import { sseService } from '../services/sse.service.js';
 import { logger } from '../../../utils/logger.js';
+import { db } from '../../../db/index.js';
+import { commandTimings } from '../../../db/schema/index.js';
 
 /**
  * Stage descriptions for command processing
@@ -82,6 +84,7 @@ export class CommandTimer {
 
         const duration = Date.now() - this.currentStage.startTime;
         this.stages.set(this.currentStage.number, {
+            number: this.currentStage.number,
             duration,
             description: this.currentStage.description,
             completed: true
@@ -92,34 +95,89 @@ export class CommandTimer {
     }
 
     /**
-     * Mark the command as complete
-     * @param {Object} result - The command execution result
+     * Save timing data to the database
+     * @param {Object} result - Command execution result
+     * @param {number} result.matched_tickets_count - Number of tickets matched
+     * @param {number} result.num_tickets_affected - Number of tickets modified
+     * @param {boolean} result.was_accepted - Whether changes were accepted
      */
-    complete(result) {
+    async save({ matched_tickets_count, num_tickets_affected, was_accepted }) {
+        this.endStage(); // Ensure current stage is ended
+
+        // Convert stages Map to object for database
+        const timings = {
+            command_text: this.commandText,
+            matched_tickets_count,
+            num_tickets_affected,
+            was_accepted,
+            stage_1_duration: this.stages.get(1)?.duration || 0,
+            stage_2_duration: this.stages.get(2)?.duration || 0,
+            stage_3_duration: this.stages.get(3)?.duration || 0,
+            stage_4_duration: this.stages.get(4)?.duration || 0,
+            stage_5_duration: this.stages.get(5)?.duration || 0,
+            stage_6_duration: this.stages.get(6)?.duration || 0
+        };
+
+        await db.insert(commandTimings).values(timings);
+    }
+
+    /**
+     * Mark the command as complete and optionally save timing data
+     * @param {Object} result - The command execution result
+     * @param {boolean} [shouldSave=true] - Whether to save timing data to database
+     */
+    async complete(result, shouldSave = true) {
         this.endStage();
         this.status = 'complete';
         
+        // Save timing data if requested
+        if (shouldSave) {
+            await this.save({
+                matched_tickets_count: result.matchCount || 0,
+                num_tickets_affected: result.suggestedChanges?.changes?.length || 0,
+                was_accepted: true
+            });
+        }
+        
+        // Calculate total duration from stage durations
+        const totalDuration = Array.from(this.stages.values())
+            .reduce((sum, stage) => sum + stage.duration, 0);
+        
         sseService.broadcast('command_complete', {
             commandId: this.commandId,
-            duration: Date.now() - this.startTime,
+            duration: totalDuration,
             stages: Object.fromEntries(this.stages),
             result
         });
     }
 
     /**
-     * Mark the command as failed
+     * Mark the command as failed and optionally save timing data
      * @param {Error} error - The error that occurred
+     * @param {boolean} [shouldSave=true] - Whether to save timing data to database
      */
-    fail(error) {
+    async fail(error, shouldSave = true) {
         this.endStage();
         this.status = 'error';
+
+        // Save timing data if requested
+        if (shouldSave) {
+            await this.save({
+                matched_tickets_count: 0,
+                num_tickets_affected: 0,
+                was_accepted: false
+            });
+        }
+
+        // Calculate total duration from stage durations
+        const totalDuration = Array.from(this.stages.values())
+            .reduce((sum, stage) => sum + stage.duration, 0);
 
         sseService.broadcast('command_error', {
             commandId: this.commandId,
             error: error.message,
             stages: Object.fromEntries(this.stages),
-            duration: Date.now() - this.startTime
+            duration: totalDuration
         });
     }
 
@@ -139,14 +197,14 @@ export class CommandTimer {
      * @returns {Object} Progress information
      */
     getProgress() {
-        const elapsed = Date.now() - this.startTime;
         const completedStages = Array.from(this.stages.values());
+        const totalElapsed = completedStages.reduce((sum, stage) => sum + stage.duration, 0);
         
         const progress = {
             status: this.status,
             command: this.commandText,
             startTime: this.startTime,
-            elapsed,
+            elapsed: totalElapsed,
             matchedTicketsCount: this.matchedTicketsCount,
             stages: completedStages,
             currentStage: null

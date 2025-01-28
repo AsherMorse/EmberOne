@@ -34,12 +34,12 @@ export async function processCommand(commandData) {
         const result = await processCommandStages(commandData, timer);
         
         // Mark command as complete
-        timer.complete(result);
+        await timer.complete(result);
         return result;
     } catch (error) {
         // Handle command failure
         logger.error(`Command processing failed: ${commandId}`, error);
-        timer.fail(error);
+        await timer.fail(error);
         throw error;
     }
 }
