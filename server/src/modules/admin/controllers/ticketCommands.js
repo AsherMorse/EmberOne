@@ -1,49 +1,111 @@
 /**
  * Controller for handling admin ticket commands
- * Provides functionality for command validation, preview generation, and execution
+ * Provides functionality for natural language to query conversion
  */
 
-import { changeGenerationChain } from '../../ai/chains/changeGeneration.js';
 import { Errors } from '../../ai/utils/errors.js';
+import { queryGenerationChain } from '../../ai/chains/queryGeneration.js';
+import { Client } from 'langsmith';
+import { ticketService } from '../../tickets/services/ticket.service.js';
+
+// Initialize LangSmith client
+const client = new Client({
+    apiUrl: process.env.LANGSMITH_API_URL,
+    apiKey: process.env.LANGSMITH_API_KEY
+});
 
 /**
- * Processes the initial command request
- * Note: Request validation is handled by validateTicketCommand middleware
- * @param {Object} command - The command object to process
- * @returns {Object} The processed command with validation results
+ * Processes the natural language command request
+ * @param {Object} command - The command object with text property
+ * @returns {Object} The processed query with explanation and matching tickets
  * @throws {AIProcessingError} If validation fails
  */
 export const processCommand = async (command) => {
     try {
-        // Format command for AI processing
-        const aiInput = {
-            command: `${command.type} tickets matching ${JSON.stringify(command.filters)} with updates ${JSON.stringify(command.updates)}`,
-            tickets: [], // Empty for initial validation
-            input: 'Please validate this command and ensure it follows business rules.'
-        };
+        if (!command.text) {
+            throw Errors.invalidCommand('Command text is required');
+        }
 
-        // Run through change generation chain for validation
-        const validationResult = await changeGenerationChain.invoke(aiInput);
+        const result = await queryGenerationChain.invoke({
+            command: command.text,
+            current_date: new Date().toISOString()
+        }, {
+            callbacks: [{
+                handleChainEnd: async (outputs) => {
+                    await client.createRun({
+                        name: "Query Generation",
+                        run_type: "chain",
+                        inputs: { command: command.text },
+                        outputs: outputs,
+                        tags: ["ticket_command", "query_generation"]
+                    });
+                }
+            }]
+        });
 
-        // Return validated command with AI insights
+        if (!result || !result.query) {
+            throw Errors.invalidCommand('Failed to generate query from command');
+        }
+
+        // Build search string from title and description filters
+        const searchTerms = [];
+        if (result.query.filters.title_contains) searchTerms.push(result.query.filters.title_contains);
+        if (result.query.filters.description_contains) searchTerms.push(result.query.filters.description_contains);
+
+        // Fetch matching tickets using the generated query
+        const tickets = await ticketService.listTickets(null, 'ADMIN', {
+            status: result.query.filters.status,
+            priority: result.query.filters.priority,
+            search: result.query.filters.title_contains,
+            assignedAgentId: result.query.filters.assigned_agent_id,
+            customerEmail: result.query.filters.customer_email_contains,
+            customerName: result.query.filters.customer_name_contains,
+            createdAfter: result.query.filters.created_after,
+            createdBefore: result.query.filters.created_before,
+            updatedAfter: result.query.filters.updated_after,
+            updatedBefore: result.query.filters.updated_before,
+            closedAfter: result.query.filters.closed_after,
+            closedBefore: result.query.filters.closed_before,
+            sortBy: result.query.sort?.field,
+            sortOrder: result.query.sort?.order
+        });
+
         return {
-            type: command.type,
-            filters: command.filters,
-            updates: command.updates,
-            validation: {
-                isValid: true,
-                impact: validationResult.impact_assessment,
-                reasoning: validationResult.summary
-            }
+            ...result,
+            tickets: tickets.tickets,
+            matchCount: tickets.tickets.length
         };
     } catch (error) {
-        // Pass through AI processing errors
-        if (error.name === 'AIProcessingError') {
-            throw error;
+        if (error.code) {
+            throw error; // Pass through AIErrors
         }
-        // Wrap other errors
-        throw Errors.invalidCommand(error.message);
+        throw Errors.invalidCommand(error.message || 'Failed to process command');
     }
+};
+
+/**
+ * Determines command type from query result
+ */
+const determineCommandType = (queryResult) => {
+    const filters = queryResult.query.filters;
+    if (filters.status) return 'UPDATE_STATUS';
+    if (filters.priority) return 'UPDATE_PRIORITY';
+    if (filters.assigned_agent_id) return 'ASSIGN_AGENT';
+    throw Errors.invalidCommand('Unable to determine command type from query');
+};
+
+/**
+ * Extracts updates from query result
+ */
+const extractUpdates = (queryResult) => {
+    const filters = queryResult.query.filters;
+    const updates = {};
+    
+    if (filters.status) updates.status = filters.status;
+    if (filters.priority) updates.priority = filters.priority;
+    if (filters.assigned_agent_id) updates.assignedAgentId = filters.assigned_agent_id;
+    
+    return updates;
 };
 
 /**

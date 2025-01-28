@@ -6,6 +6,20 @@
  * Validate ticket command request
  */
 export const validateTicketCommand = (req, res, next) => {
+    // Check if this is a natural language command
+    if (req.body.text) {
+        if (typeof req.body.text !== 'string' || req.body.text.length < 3) {
+            return res.status(400).json({
+                message: 'Validation failed',
+                code: 400,
+                errors: ['Command text must be a string of at least 3 characters']
+            });
+        }
+        next();
+        return;
+    }
+
+    // Otherwise validate structured command
     const { type, filters, updates } = req.body;
     const errors = [];
 
@@ -67,53 +81,4 @@ export const validateTicketCommand = (req, res, next) => {
     }
 
     next();
-};
-
-/**
- * Validate command response format
- * @param {Object} response - The response object to validate
- * @returns {Object} Validated and formatted response
- * @throws {Error} If response format is invalid
- */
-export const validateCommandResponse = (response) => {
-    if (!response || typeof response !== 'object') {
-        throw new Error('Response must be an object');
-    }
-
-    // Validate message
-    if (!response.message || typeof response.message !== 'string') {
-        throw new Error('Response must include a message string');
-    }
-
-    // Validate command object
-    if (!response.command || typeof response.command !== 'object') {
-        throw new Error('Response must include a command object');
-    }
-
-    const { command } = response;
-
-    // Validate command properties
-    if (!command.type || !command.filters || !command.updates || !command.validation) {
-        throw new Error('Command must include type, filters, updates, and validation');
-    }
-
-    // Validate impact assessment if provided
-    if (response.impact) {
-        if (!response.impact.level || !response.impact.factors || !response.impact.reasoning) {
-            throw new Error('Impact assessment must include level, factors, and reasoning');
-        }
-    }
-
-    // Return formatted response
-    return {
-        message: response.message,
-        code: 200,
-        command: {
-            type: command.type,
-            filters: command.filters,
-            updates: command.updates,
-            validation: command.validation
-        },
-        impact: response.impact
-    };
 }; 

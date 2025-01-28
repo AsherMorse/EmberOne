@@ -1,69 +1,42 @@
 import express from 'express';
-import { validateAdmin } from './middleware/adminAuth.js';
 import { processCommand } from './controllers/ticketCommands.js';
-import { validateTicketCommand, validateCommandResponse } from './utils/validation.utils.js';
+import { validateTicketCommand } from './utils/validation.utils.js';
 
 const router = express.Router();
 
-// Ticket Command Routes
-router.post('/tickets/command', validateAdmin, validateTicketCommand, async (req, res) => {
-    try {
-        const validatedCommand = await processCommand(req.body);
-        
-        // Validate and format the response
-        const response = validateCommandResponse({
-            message: validatedCommand.validation.reasoning,
-            command: validatedCommand,
-            impact: validatedCommand.validation.impact
-        });
-        
-        res.json(response);
-    } catch (error) {
-        // Handle AI processing errors
-        if (error.name === 'AIProcessingError') {
-            return res.status(400).json({
-                message: error.message,
-                code: 400,
-                error: error.error,
-                details: error.details,
-                suggestion: error.suggestion
+/**
+ * @route POST /api/admin/tickets/command
+ * @desc Process a ticket command (natural language or structured)
+ * @access Admin only
+ */
+router.post('/tickets/command', 
+    validateTicketCommand,
+    async (req, res) => {
+        try {
+            const result = await processCommand(req.body);
+            res.json({
+                message: result.explanation || 'Command processed successfully',
+                code: 200,
+                result
             });
-        }
-        
-        // Handle response validation errors
-        if (error.message.includes('Response must')) {
-            console.error('Response validation error:', error);
-            res.status(500).json({
-                message: 'Internal server error',
+        } catch (error) {
+            // Handle AI processing errors
+            if (error.name === 'AIProcessingError') {
+                return res.status(400).json({
+                    message: error.message,
+                    code: 400,
+                    error: error.error,
+                    details: error.details
+                });
+            }
+            
+            res.status(500).json({ 
+                message: 'Command processing failed',
                 code: 500,
-                error: 'Failed to format response'
-            });
-        } else {
-            res.status(400).json({ 
-                message: 'Command validation failed',
-                code: 400,
                 error: error.message 
             });
         }
     }
-});
+);
 
-router.post('/tickets/command/preview', validateAdmin, async (req, res) => {
-    try {
-        // TODO: Implement preview generation
-        res.status(501).json({ error: 'Not implemented' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-router.post('/tickets/command/execute', validateAdmin, async (req, res) => {
-    try {
-        // TODO: Implement command execution with transaction support
-        res.status(501).json({ error: 'Not implemented' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-export default router; 
+export default router;

@@ -171,7 +171,10 @@ export const changeGenerationChain = RunnableSequence.from([
   prompt,
   gpt4oMini.bind({ 
     function_call: { name: "output" }, 
-    functions: [{ name: "output", parameters: ChangeGenerationSchema.shape }] 
+    functions: [{ 
+      name: "output", 
+      parameters: ChangeGenerationSchema.shape
+    }]
   }),
   (response) => response.function_call.arguments,
   validateChanges
