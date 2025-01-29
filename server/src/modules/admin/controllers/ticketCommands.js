@@ -99,6 +99,7 @@ async function processCommandStages(commandData, timer) {
         timer.startStage(3);
         logger.debug(`Stage 3: Finding tickets ${timer.commandId}`);
         const tickets = await ticketService.listTickets(null, 'ADMIN', {
+            limit: 0, // No limit for commands
             status: queryResult.query.filters.status,
             priority: queryResult.query.filters.priority,
             search: queryResult.query.filters.title_contains,

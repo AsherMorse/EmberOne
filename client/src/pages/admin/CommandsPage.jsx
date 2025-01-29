@@ -3,14 +3,23 @@ import { useState } from 'react';
 import { executeCommand, executeChanges } from '../../lib/api';
 import CommandProgress from '../../components/CommandProgress';
 
-function Message({ type, text }) {
+function Message({ type, text, onDismiss }) {
   return (
     <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
       type === 'success' 
         ? 'bg-green-500/90 text-white' 
         : 'bg-red-500/90 text-white'
-    }`}>
-      {text}
+    } flex items-center gap-3`}>
+      <span>{text}</span>
+      <button
+        onClick={onDismiss}
+        className="hover:bg-white/20 rounded-full p-1"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
   );
 }
@@ -218,11 +227,39 @@ const CommandsPage = () => {
     <div>
       <div className="flex flex-col gap-4">
         {message && (
-          <Message type={message.type} text={message.text} />
+          <Message 
+            type={message.type} 
+            text={message.text} 
+            onDismiss={() => setMessage(null)} 
+          />
         )}
         
         {isExecuting && commandId && !preview && (
-          <CommandProgress commandId={commandId} />
+          <CommandProgress commandId={commandId} onComplete={(result) => {
+            setIsExecuting(false);
+            if (result) {
+              // Create a map of ticket details by ID
+              const ticketDetailsMap = new Map(
+                result.tickets?.map(ticket => [ticket.id, ticket]) || []
+              );
+              
+              // Enhance changes with full ticket details
+              const enhancedChanges = result.suggestedChanges?.changes?.map(change => ({
+                ...change,
+                ticket_details: ticketDetailsMap.get(change.ticket_id) || {}
+              }));
+
+              setPreview({
+                command: command,
+                explanation: result.explanation,
+                matchCount: result.suggestedChanges?.impact_assessment?.factors?.num_tickets || 0,
+                changes: {
+                  ...result.suggestedChanges,
+                  changes: enhancedChanges
+                }
+              });
+            }
+          }} />
         )}
 
         <div className="flex justify-between items-center mb-6">
@@ -256,7 +293,7 @@ const CommandsPage = () => {
               </div>
 
               {/* Command Progress */}
-              {isExecuting && (
+              {isExecuting && !preview && (
                 <div className="mt-4">
                   <CommandProgress
                     onComplete={(result) => {
@@ -332,8 +369,10 @@ const CommandsPage = () => {
                         <div className="text-sm text-foreground line-clamp-1">{preview.command}</div>
                       </div>
                       <div>
-                        <div className="text-xs font-medium text-muted-foreground mb-0.5">Explanation</div>
-                        <div className="text-sm text-foreground line-clamp-2">{preview.explanation}</div>
+                        <div className="text-xs font-medium text-muted-foreground mb-0.5">Impact Analysis</div>
+                        <div className="text-sm text-foreground line-clamp-2">
+                          {preview.changes?.impact_assessment?.reasoning || 'No impact analysis available'}
+                        </div>
                       </div>
                     </div>
                   </div>

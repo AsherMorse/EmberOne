@@ -84,16 +84,8 @@ const validateChanges = (changes) => {
       throw Errors.insufficientChanges();
     }
 
-    // Check for invalid state transitions
+    // Ensure at least one field is being updated for each change
     for (const change of parsed.changes) {
-      // Validate state transitions
-      if (change.current_state.status === 'CLOSED' && 
-          change.updates.status && 
-          !['OPEN', 'IN_PROGRESS'].includes(change.updates.status)) {
-        throw Errors.invalidStateTransition('CLOSED', change.updates.status);
-      }
-
-      // Ensure at least one field is being updated
       const updateFields = Object.keys(change.updates);
       if (updateFields.length === 0) {
         throw Errors.insufficientChanges();

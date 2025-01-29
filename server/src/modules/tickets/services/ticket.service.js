@@ -35,11 +35,13 @@ class TicketService {
     totalQuery = applyAllFilters(totalQuery, profileId, role, options);
     const [{ count: total }] = await totalQuery;
 
-    // Get paginated results
-    const results = await applyPagination(query, {
-      page: options.page,
-      limit: options.limit
-    });
+    // Get paginated results, unless limit is 0 (unlimited)
+    const results = options.limit === 0 
+      ? await query 
+      : await applyPagination(query, {
+          page: options.page,
+          limit: options.limit
+        });
 
     return {
       tickets: results,
