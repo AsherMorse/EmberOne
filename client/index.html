@@ -11,6 +11,7 @@
   - UTF-8 character encoding
   - React root mounting point
   - Vite module loading
+  - PWA support
 -->
 <html lang="en">
   <head>
@@ -25,8 +26,17 @@
     
     <!-- Primary meta tags -->
     <meta name="description" content="PERN Stack starter application with React frontend" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#eb5e28" />
     
+    <!-- PWA meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="EmberOne" />
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
